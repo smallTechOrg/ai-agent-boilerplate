@@ -19,6 +19,7 @@ def get_all_chat_info() -> Tuple[List[Dict[str, Any]], HTTPStatus]:
                     COALESCE(status, 'OPEN') as status,
                     COALESCE(remarks, '') as remarks
                 FROM chat_info
+                WHERE is_active is TRUE
                 ORDER BY created_at DESC;
             """)
             records = cur.fetchall()

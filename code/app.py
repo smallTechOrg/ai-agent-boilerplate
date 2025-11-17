@@ -66,12 +66,13 @@ def patch_updates():
         session_id = update_data.get("session_id")
         status = update_data.get("status")
         remarks = update_data.get("remarks")
+        is_active = update_data.get("is_active")
 
         #validate update data
         result = validate_update_data(update_data, session_id, status)
         if not result["is_valid"]:
             return jsonify({"error": result["message"]}), result["status"]
-        update_chat_info(session_id, status, remarks)
+        update_chat_info(session_id, status, remarks, is_active)
         return jsonify({"sucess":True, "message":"chat-info updated"}), HTTPStatus.OK
     except Exception as e:
         return jsonify({
@@ -79,33 +80,6 @@ def patch_updates():
             "error": f"Unable to update chat-info. Please try again later. ({str(e)})"
         }), HTTPStatus.INTERNAL_SERVER_ERROR
 
-@app.route('/chat-info', methods=['DELETE'])
-def delete_chat_info_row():
-    try:
-        session_id = request.args.get("session_id")
-        result = validate_session_id(session_id)
-        if not result["is_valid"]:
-            return jsonify({"error": result["message"]}), result["status"]
-        
-        deleted = delete_chat_info(session_id)
-
-        if deleted:
-            return jsonify({
-                "success": True,
-                "message": "chat-info deleted successfully."
-            }), HTTPStatus.OK
-        else:
-            return jsonify({
-                "success": True,
-                "message": "No chat-info found for the provided session_id. Nothing to delete."
-            }), HTTPStatus.NOT_FOUND
-        
-    except Exception as e:
-        print(f"Error in delete_chat_info: {e}")
-        return jsonify({
-            "success": False,
-            "error": "Unable to delete lead. Please try again later."
-        }), HTTPStatus.INTERNAL_SERVER_ERROR
 
 #Rendering response
 # chat_api is a Flask route function defined that acts as the backend API endpoint for chat exchanges. It is the API endpoint your frontend calls to send user messages and receive chatbot responses.

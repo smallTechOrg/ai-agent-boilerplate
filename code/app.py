@@ -69,7 +69,7 @@ def patch_updates():
         is_active = update_data.get("is_active")
 
         #validate update data
-        result = validate_update_data(update_data, session_id, status)
+        result = validate_update_data(update_data, session_id, status,is_active)
         if not result["is_valid"]:
             return jsonify({"error": result["message"]}), result["status"]
         update_chat_info(session_id, status, remarks, is_active)

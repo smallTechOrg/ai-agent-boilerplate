@@ -72,8 +72,11 @@ def patch_updates():
         result = validate_update_data(update_data, session_id, status,is_active)
         if not result["is_valid"]:
             return jsonify({"error": result["message"]}), result["status"]
-        update_chat_info(session_id, status, remarks, is_active)
-        return jsonify({"sucess":True, "message":"chat-info updated"}), HTTPStatus.OK
+        updated = update_chat_info(session_id, status, remarks, is_active)
+        if updated:
+            return jsonify({"sucess":True, "message":"chat-info updated"}), HTTPStatus.OK
+        else:
+            return jsonify({"sucess":False, "message":"Invalid Input"}), HTTPStatus.BAD_REQUEST
     except Exception as e:
         return jsonify({
             "success": False,

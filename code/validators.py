@@ -48,7 +48,7 @@ def validate_update_data(update_data, session_id, status, is_active):
             return {"is_valid":False, "message":"session_id/data is required", "status":HTTPStatus.BAD_REQUEST}
         if status and status not in status_type.__members__ and status not in [s.value for s in status_type]:
             return {"is_valid":False, "message":"Status not allowed", "status":HTTPStatus.BAD_REQUEST}
-        if is_active and is_active is not False:
+        if is_active and not isinstance(is_active, bool):
             return {"is_valid":False, "message":"Invalid input", "status":HTTPStatus.BAD_REQUEST}
         return {"is_valid":True, "message":"Valid session_id", "status":HTTPStatus.OK}
 

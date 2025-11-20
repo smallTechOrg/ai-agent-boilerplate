@@ -96,23 +96,22 @@ def ensure_summaries_table_exists(sync_connection):
 def ensure_prompts_table_exists(sync_connection):
     """
     Create or verify a 'prompts' table with columns:
-      - agent_type
-      - prompt_name
-      - prompt_description
+      - domain : domain, under which prompt is, example as common, smalltech, client
+      - agent_type -- Determines the type of agent, example as Sales, generic
+      - type -- What the prompt use for, example as name_prompt, sales prompt, info_prompt, generic
+      - text -- prompt itself
     """
     try:
         with sync_connection.cursor() as cur:
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS prompts (
                 id SERIAL PRIMARY KEY,
+                domain Text DEFAULT 'common',
                 agent_type TEXT NOT NULL,
-                prompt_name TEXT NOT NULL,
-                prompt_description TEXT,
+                type TEXT NOT NULL,
+                "text" TEXT,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
-            
-            CREATE INDEX IF NOT EXISTS idx_prompts_agent_type ON prompts(agent_type);
-            CREATE INDEX IF NOT EXISTS idx_prompts_prompt_name ON prompts(prompt_name);
             """
             cur.execute(create_table_sql)
             sync_connection.commit()
@@ -124,10 +123,9 @@ def ensure_prompts_table_exists(sync_connection):
 def ensure_domains_table_exists(sync_connection):
     """
     Create or verify a 'domains' table with columns:
-      - key
-      - address
-      - domain_prompt
-      - domain_message
+      - key : unique identifier example common, smalltech, client
+      - address : url for the example domain smalltech.in
+      - parent key : parent key for domain key
     Note: column name 'key' will be created quoted to avoid ambiguity; it's still a valid column name.
     """
     try:
@@ -137,13 +135,10 @@ def ensure_domains_table_exists(sync_connection):
                 id SERIAL PRIMARY KEY,
                 "key" TEXT NOT NULL UNIQUE,
                 address TEXT,
-                domain_prompt TEXT,
-                domain_message TEXT,
+                parent TEXT,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
             
-            CREATE INDEX IF NOT EXISTS idx_domains_key ON domains("key");
-            CREATE INDEX IF NOT EXISTS idx_domains_address ON domains(address);
             """
             cur.execute(create_table_sql)
             sync_connection.commit()

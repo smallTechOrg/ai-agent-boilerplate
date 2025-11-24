@@ -85,6 +85,9 @@ def ensure_summaries_table_exists(sync_connection):
 
             cur.execute("ALTER TABLE chat_info ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'OPEN';")
             cur.execute("ALTER TABLE chat_info ADD COLUMN IF NOT EXISTS remarks TEXT;")
+            cur.execute("ALTER TABLE chat_info ADD COLUMN IF NOT EXISTS domain TEXT DEFAULT 'smalltech.in';")
+            cur.execute("ALTER TABLE chat_info ADD COLUMN IF NOT EXISTS agent_type TEXT DEFAULT 'contact_us';")
+
             cur.execute("ALTER TABLE chat_info ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;")
 
             sync_connection.commit()
@@ -92,6 +95,61 @@ def ensure_summaries_table_exists(sync_connection):
             
     except Exception as e:
         print(f"Error creating chat_info table: {e}")
+        sync_connection.rollback()
+
+def ensure_prompts_table_exists(sync_connection):
+    """
+    Create or verify a 'prompts' table with columns:
+      - domain : domain, under which prompt is, example as common, smalltech, client
+      - agent_type -- Determines the type of agent, example as Sales, generic
+      - type -- What the prompt use for, example as name_prompt, sales prompt, info_prompt, generic
+      - text -- prompt itself
+    """
+    try:
+        with sync_connection.cursor() as cur:
+            create_table_sql = """
+            CREATE TABLE IF NOT EXISTS prompts (
+                id SERIAL PRIMARY KEY,
+                domain Text DEFAULT 'common',
+                agent_type TEXT NOT NULL,
+                type TEXT NOT NULL,
+                "text" TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+            """
+            cur.execute(create_table_sql)
+            sync_connection.commit()
+            print("Table 'prompts' created/verified successfully.")
+    except Exception as e:
+        print(f"Error creating prompts table: {e}")
+        sync_connection.rollback()
+
+def ensure_domains_table_exists(sync_connection):
+    """
+    Create or verify a 'domains' table with columns:
+      - key : unique identifier example common, smalltech, client
+      - address : url for the example domain smalltech.in
+      - parent key : parent key for domain key
+    Note: column name 'key' will be created quoted to avoid ambiguity; it's still a valid column name.
+    """
+    try:
+        with sync_connection.cursor() as cur:
+            create_table_sql = """
+            CREATE TABLE IF NOT EXISTS domains (
+                id SERIAL PRIMARY KEY,
+                "key" TEXT NOT NULL UNIQUE,
+                address TEXT,
+                parent TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            """
+            cur.execute(create_table_sql)
+            sync_connection.commit()
+            print("Table 'domains' created/verified successfully.")
+    except Exception as e:
+        print(f"Error creating domains table: {e}")
+        sync_connection.rollback()
 
 def setup_database_and_table(database_url, table_name):
     """
@@ -103,6 +161,9 @@ def setup_database_and_table(database_url, table_name):
 
         ensure_chat_table_exists(sync_connection, table_name)
         ensure_summaries_table_exists(sync_connection)
+        ensure_prompts_table_exists(sync_connection)
+        ensure_domains_table_exists(sync_connection)
+
         return sync_connection, table_name
     except Exception as e:
         print(f"Error setting up database: {e}")

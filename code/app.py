@@ -9,7 +9,6 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from history import get_history
 from leads import get_all_chat_info
 from leads_update import update_chat_info
-from delete_info import delete_chat_info
 app = Flask(__name__)
 CORS(app)
 
@@ -74,9 +73,9 @@ def patch_updates():
             return jsonify({"error": result["message"]}), result["status"]
         updated = update_chat_info(session_id, status, remarks, is_active)
         if updated:
-            return jsonify({"sucess":True, "message":"chat-info updated"}), HTTPStatus.OK
+            return jsonify({"success":True, "message":"chat-info updated"}), HTTPStatus.OK
         else:
-            return jsonify({"sucess":False, "message":"Invalid Input"}), HTTPStatus.BAD_REQUEST
+            return jsonify({"success":False, "message":"Invalid Input"}), HTTPStatus.BAD_REQUEST
     except Exception as e:
         return jsonify({
             "success": False,

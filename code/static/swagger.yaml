@@ -238,79 +238,11 @@ paths:
                   error:
                     type: string
                     example: "Unable to fetch chat info. Please try again later."
-
-    delete:
-      summary: Delete a lead by session_id
-      description: >
-        Permanently deletes the lead (chat info) record from the database  
-        that matches the given `session_id`.
-      parameters:
-        - name: session_id
-          in: query
-          required: true
-          schema:
-            type: string
-            format: UUID
-          description: Unique session identifier of the lead to delete
-          example: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
-      responses:
-        "200":
-          description: Lead deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Lead deleted successfully."
-        "404":
-          description: Lead not found for the given session_id
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  error:
-                    type: string
-                    example: "No lead found for the provided session_id."
-        "400":
-          description: Invalid session_id parameter
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  error:
-                    type: string
-                    example: "Invalid or missing session_id."
-        "500":
-          description: Server error while deleting lead
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  error:
-                    type: string
-                    example: "Unable to delete lead. Please try again later."
                     
     patch:
-      summary: Update lead status and remarks
+      summary: Update lead status, remarks and is_active
       description: >
-        Update the `status` and/or `remarks` of a lead identified by its `session_id`.
+        Update the `status` and/or `remarks` and/or `is_active` of a lead identified by its `session_id`.
       requestBody:
         required: true
         content:
@@ -330,6 +262,9 @@ paths:
                 remarks:
                   type: string
                   description: Analyst's updated remarks
+                is_active:
+                  type: boolean
+                  description: Used for soft delete unneccessary data
             examples:
               updateStatusOnly:
                 summary: Update only status
@@ -341,15 +276,27 @@ paths:
                 value:
                   session_id: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
                   remarks: "Sent follow-up email, awaiting response"
+              updateis_activeOnly:
+                summary: Update only is_active
+                value:
+                  session_id: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
+                  is_active: false
               updateStatusAndRemarks:
-                summary: Update both status and remarks
+                summary: Update Any two (status and remarks)
                 value:
                   session_id: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
                   status: "QUALIFYING"
                   remarks: "Client called back, demo scheduled"
+              updateStatusAndRemarksAndis_active:
+                summary: Update All (status, remarks and is_active)
+                value:
+                  session_id: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
+                  status: "QUALIFYING"
+                  remarks: "Client called back, demo scheduled"
+                  is_active: false
       responses:
         "200":
-          description: Lead updated successfully
+          description: Chat-info updated successfully
           content:
             application/json:
               schema:
@@ -360,7 +307,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "Lead updated successfully."
+                    example: "Chat-info updated successfully."
                   updated_lead:
                     type: object
                     properties:
@@ -373,6 +320,9 @@ paths:
                       remarks:
                         type: string
                         example: "Client called back, demo scheduled"
+                      is_active:
+                        type: boolean
+                        example: false
         "400":
           description: Invalid request payload
           content:
@@ -385,20 +335,7 @@ paths:
                     example: false
                   error:
                     type: string
-                    example: "Invalid status value provided."
-        "404":
-          description: Lead not found for the given session_id
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  error:
-                    type: string
-                    example: "Lead not found."
+                    example: "Enter correct input"
         "500":
           description: Server error while updating lead
           content:

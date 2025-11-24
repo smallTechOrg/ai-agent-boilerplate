@@ -7,8 +7,8 @@ from config import DEBUG
 from flask_cors import CORS 
 from flask_swagger_ui import get_swaggerui_blueprint
 from history import get_history
-from leads import get_all_leads
-from leads_update import update_lead
+from leads import get_all_chat_info
+from leads_update import update_chat_info
 app = Flask(__name__)
 CORS(app)
 
@@ -47,10 +47,10 @@ def history_endpoint():
     history_data, status = get_history(session_id)
     return jsonify(history_data), status
 
-@app.route('/leads', methods=['GET'])
-def get_leads():
+@app.route('/chat-info', methods=['GET'])
+def get_chat_info():
     try:
-        leads_data, status = get_all_leads()
+        leads_data, status = get_all_chat_info()
         return jsonify({"leads":leads_data}), status
     except Exception as e:
         print(f"Error in get_leads endpoint: {e}")
@@ -65,18 +65,23 @@ def patch_updates():
         session_id = update_data.get("session_id")
         status = update_data.get("status")
         remarks = update_data.get("remarks")
+        is_active = update_data.get("is_active")
 
         #validate update data
-        result = validate_update_data(update_data, session_id, status)
+        result = validate_update_data(update_data, session_id, status,is_active)
         if not result["is_valid"]:
             return jsonify({"error": result["message"]}), result["status"]
-        update_lead(session_id, status, remarks)
-        return jsonify({"sucess":True, "message":"Leads updated"}), HTTPStatus.OK
+        updated = update_chat_info(session_id, status, remarks, is_active)
+        if updated:
+            return jsonify({"success":True, "message":"chat-info updated"}), HTTPStatus.OK
+        else:
+            return jsonify({"success":False, "message":"Invalid Input"}), HTTPStatus.BAD_REQUEST
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": f"Unable to update lead. Please try again later. ({str(e)})"
+            "error": f"Unable to update chat-info. Please try again later. ({str(e)})"
         }), HTTPStatus.INTERNAL_SERVER_ERROR
+
 
 #Rendering response
 # chat_api is a Flask route function defined that acts as the backend API endpoint for chat exchanges. It is the API endpoint your frontend calls to send user messages and receive chatbot responses.

@@ -88,6 +88,7 @@ def ensure_summaries_table_exists(sync_connection):
             cur.execute("ALTER TABLE chat_info ADD COLUMN IF NOT EXISTS domain TEXT DEFAULT 'smalltech.in';")
             cur.execute("ALTER TABLE chat_info ADD COLUMN IF NOT EXISTS agent_type TEXT DEFAULT 'contact_us';")
 
+            cur.execute("ALTER TABLE chat_info ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;")
 
             sync_connection.commit()
             print("Table 'chat_info' created/verified successfully.")

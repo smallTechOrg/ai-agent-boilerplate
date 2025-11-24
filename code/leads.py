@@ -3,7 +3,7 @@ from psycopg.rows import dict_row
 from db import sync_connection  
 from http import HTTPStatus
 
-def get_all_leads() -> Tuple[List[Dict[str, Any]], HTTPStatus]:
+def get_all_chat_info() -> Tuple[List[Dict[str, Any]], HTTPStatus]:
     """
     Retrieve all stored chat info records.
     """
@@ -19,6 +19,7 @@ def get_all_leads() -> Tuple[List[Dict[str, Any]], HTTPStatus]:
                     COALESCE(status, 'OPEN') as status,
                     COALESCE(remarks, '') as remarks
                 FROM chat_info
+                WHERE is_active is TRUE
                 ORDER BY created_at DESC;
             """)
             records = cur.fetchall()
@@ -26,6 +27,6 @@ def get_all_leads() -> Tuple[List[Dict[str, Any]], HTTPStatus]:
         return records, HTTPStatus.OK
 
     except Exception as e:
-        print("Error fetching leads:", e)
+        print("Error fetching chat-info:", e)
         raise
 

@@ -2,7 +2,9 @@ import json
 from pathlib import Path
 from functools import lru_cache
 from db import sync_connection
+from prompts_table import check_and_insert_default_prompts
 
+check_and_insert_default_prompts(sync_connection)
 def load_prompt_from_db(domain: str, agent_type: str, prompt_type: str):
     """
     Fetch a prompt's text from the DB (JSON or plain text), cache for fast access.
@@ -43,10 +45,19 @@ def get_generic_prompt():
     return data["system"]
 
 def get_sales_prompt():
-    data = load_prompt_from_db("common", "contact_us", "system")
-    if isinstance(data, dict) and "system" in data:
-        return "\n".join(data["system"])
-    return data["system"]
+    # Load both prompts from DB
+    common_data = load_prompt_from_db("common", "contact_us", "system")
+    company_data = load_prompt_from_db("smallTech.in", "contact_us", "company")
+
+    # Extract "system" arrays safely
+    common_parts = common_data["system"] if isinstance(common_data, dict) and "system" in common_data else [common_data]
+    company_parts = company_data["system"] if isinstance(company_data, dict) and "system" in company_data else [company_data]
+
+    # Merge arrays
+    merged_parts = common_parts + company_parts
+
+    # Join them into one prompt string
+    return "\n".join(merged_parts)
 
 def get_name_prompt():
     data = load_prompt_from_db("common", "info-extraction", "fetch-name")

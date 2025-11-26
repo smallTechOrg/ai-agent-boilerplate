@@ -1,5 +1,22 @@
 import psycopg
-from config import DATABASE_URL
+from db import sync_connection
+import json
+from pathlib import Path
+from functools import lru_cache
+from config import first_chat_message
+
+
+def load_json(path: Path):
+    """
+    Load and return JSON content as a string.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return json.dumps(data)  # ensure DB stores valid JSON text
+    except Exception as e:
+        print(f"Failed to load JSON file {path}: {e}")
+        return None
 
 def check_and_insert_default_prompts(sync_connection):
     """
@@ -15,19 +32,33 @@ def check_and_insert_default_prompts(sync_connection):
                 print("Prompts table is empty. Inserting default prompts...")
 
                 default_prompts = [
-                    ('common', 'contact_us', 'name_prompt', 'May I know your name?'),
-                    ('common', 'contact_us', 'email_prompt', 'Could you share your email address?'),
-                    ('common', 'contact_us', 'mobile_prompt', 'May I get your phone number?'),
-                    ('common', 'contact_us', 'request_prompt', 'How may we assist you today?'),
+                    ('common', 'info-extraction', 'fetch-name', Path("prompts/name_prompt.json")),
+                    ('common', 'info-extraction', 'fetch-info',  Path("prompts/info_prompt.json")),
+                    ('common', 'test', 'test', Path("prompts/generic_prompt.json")),
+                    ('common', 'contact_us', 'system', Path("prompts/sales_prompt.json")),
+                    ('smallTech.in', 'contact_us', 'company', Path("prompts/smallTech.json")),
 
-                    ('smalltech.in', 'contact_us', 'intro', 'Welcome to SmallTech! How can we help you?'),
+                    ('smalltech.in', 'contact_us', 'intro', first_chat_message),
                 ]
 
                 for domain, agent_type, prompt_type, text in default_prompts:
+
+                    # If text is a file path → load JSON
+                    if isinstance(text, Path):
+                        text_json = load_json(text)
+                        if text_json is None:
+                            print(f"Skipping insertion for {text}")
+                            continue
+                        text_to_insert = text_json
+                    else:
+                        # Normal string (like `first_chat_message`)
+                        text_to_insert = text
+
+
                     cur.execute("""
                         INSERT INTO prompts (domain, agent_type, type, text)
                         VALUES (%s, %s, %s, %s);
-                    """, (domain, agent_type, prompt_type, text))
+                    """, (domain, agent_type, prompt_type, text_to_insert))
 
                 sync_connection.commit()
                 print("Default prompts inserted successfully.")
@@ -39,20 +70,5 @@ def check_and_insert_default_prompts(sync_connection):
         sync_connection.rollback()
 
 
-def populate_prompts():
-    """
-    Standalone runner for prompt population.
-    """
-    try:
-        conn = psycopg.connect(DATABASE_URL)
-        conn.autocommit = False
-
-        check_and_insert_default_prompts(conn)
-
-        conn.close()
-    except Exception as e:
-        print(f"Error connecting to database: {e}")
-
-
 if __name__ == "__main__":
-    populate_prompts()
+    check_and_insert_default_prompts(sync_connection)

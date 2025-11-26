@@ -1,55 +1,61 @@
 import json
 from pathlib import Path
 from functools import lru_cache
+from db import sync_connection
 
-GENERIC_PROMPT_PATH = Path(__file__).parent / "prompts" / "generic_prompt.json"
+def load_prompt_from_db(domain: str, agent_type: str, prompt_type: str):
+    """
+    Fetch a prompt's text from the DB (JSON or plain text), cache for fast access.
+    """
+    try:
+        with sync_connection.cursor() as cur:
+            cur.execute("""
+                SELECT text 
+                FROM prompts
+                WHERE domain = %s AND agent_type = %s AND type = %s
+                LIMIT 1;
+            """, (domain, agent_type, prompt_type))
 
-@lru_cache()
-def get_generic_prompt_data():
-    with open(GENERIC_PROMPT_PATH, encoding="utf-8") as f:
-        return json.load(f)
+            row = cur.fetchone()
 
+            if not row:
+                raise ValueError(f"Prompt not found in DB: {domain}/{agent_type}/{prompt_type}")
+
+            text = row[0]
+
+            # Try to parse JSON if stored as JSON string
+            try:
+                parsed = json.loads(text)
+                return parsed
+            except json.JSONDecodeError:
+                return text  # raw string
+
+    except Exception as e:
+        raise RuntimeError(f"Failed to load prompt from DB: {e}")
+    
 def get_generic_prompt():
-    return get_generic_prompt_data()["system"]
+    data = load_prompt_from_db("common", "test", "test")
 
-SALES_PROMPT_PATH = Path(__file__).parent / "prompts" / "sales_prompt.json"
+    if isinstance(data, dict) and "system" in data:
+        return "\n".join(data["system"])
 
-@lru_cache()
-def get_sales_prompt_data():
-    with open(SALES_PROMPT_PATH, encoding="utf-8") as f:
-        return json.load(f)
+    # If plain text:
+    return data["system"]
 
 def get_sales_prompt():
-    prompt_parts = get_sales_prompt_data()["system"]
-    # Join all parts and format with the actual message
-    sales_prompt = "\n".join(prompt_parts)
-    return sales_prompt
-
-
-
-
-NAME_PROMPT_PATH = Path(__file__).parent / "prompts" / "name_prompt.json"
-
-@lru_cache()
-def get_name_prompt_data():
-    with open(NAME_PROMPT_PATH, encoding="utf-8") as f:
-        return json.load(f)
+    data = load_prompt_from_db("common", "contact_us", "system")
+    if isinstance(data, dict) and "system" in data:
+        return "\n".join(data["system"])
+    return data["system"]
 
 def get_name_prompt():
-    prompt_parts = get_name_prompt_data()["system"]
-    # Join all parts and format with the actual message
-    name_prompt = "\n".join(prompt_parts)
-    return name_prompt
-
-INFO_PROMPT_PATH = Path(__file__).parent / "prompts" / "info_prompt.json"
-
-@lru_cache()
-def get_info_prompt_data():
-    with open(INFO_PROMPT_PATH, encoding="utf-8") as f:
-        return json.load(f)
+    data = load_prompt_from_db("common", "info-extraction", "fetch-name")
+    if isinstance(data, dict) and "system" in data:
+        return "\n".join(data["system"])
+    return data["system"]
 
 def get_info_prompt():
-    prompt_parts = get_info_prompt_data()["system"]
-    # Join all parts and format with the actual message
-    info_prompt = "\n".join(prompt_parts)
-    return info_prompt
+    data = load_prompt_from_db("common", "info-extraction", "fetch-info")
+    if isinstance(data, dict) and "system" in data:
+        return "\n".join(data["system"])
+    return data["system"]    

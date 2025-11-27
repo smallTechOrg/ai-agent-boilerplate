@@ -3,6 +3,8 @@ import uuid
 import psycopg
 from langchain_postgres import PostgresChatMessageHistory
 from config import DATABASE_URL, db_name, table_name
+from prompts_table import check_and_insert_default_prompts
+
 
 def ensure_database_exists(DATABASE_URL, db_name):
     """
@@ -110,7 +112,7 @@ def ensure_prompts_table_exists(sync_connection):
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS prompts (
                 id SERIAL PRIMARY KEY,
-                domain Text DEFAULT 'common',
+                domain TEXT DEFAULT 'common',
                 agent_type TEXT NOT NULL,
                 type TEXT NOT NULL,
                 "text" TEXT,
@@ -137,12 +139,14 @@ def ensure_domains_table_exists(sync_connection):
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS domains (
                 id SERIAL PRIMARY KEY,
-                "key" TEXT NOT NULL UNIQUE,
-                address TEXT,
-                parent TEXT,
+                key TEXT NOT NULL,
+                address TEXT UNIQUE NOT NULL,
+                parent TEXT REFERENCES domains(id) ON DELETE SET NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
-            
+            -- Insert a default row if it doesn't exist
+            INSERT INTO domains (key, address, parent)
+            VALUES ('COMMON', 'example.com', NULL);
             """
             cur.execute(create_table_sql)
             sync_connection.commit()
@@ -150,6 +154,7 @@ def ensure_domains_table_exists(sync_connection):
     except Exception as e:
         print(f"Error creating domains table: {e}")
         sync_connection.rollback()
+
 
 def setup_database_and_table(database_url, table_name):
     """
@@ -172,3 +177,5 @@ def setup_database_and_table(database_url, table_name):
 
 # Usage — get the ready connection and table name
 sync_connection, table_name = setup_database_and_table(DATABASE_URL, table_name)
+
+check_and_insert_default_prompts(sync_connection)

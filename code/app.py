@@ -93,17 +93,19 @@ def chat_api():
     input = data.get('input', '')
     session_id = data.get('session_id')
     request_type = data.get('request_type')
+    address = data.get('address')
     # Input Validation
 
-    result = validate_input(input, request_type)
+    result = validate_input(input, request_type, address)
 
     if not result["is_valid"]:
         return jsonify({'success': False, 'error': result["message"]}), HTTPStatus.BAD_REQUEST
-    request_type = result["message"] 
+    request_type = result["data"]["request_type"]
+    domain = result["data"]["domain"]
 
     # Get response from LLM
     try:
-        bot_response = get_groq_response(input.strip(), session_id, request_type)
+        bot_response = get_groq_response(input.strip(), session_id, request_type, domain)
         return jsonify({'success': True, 'response': bot_response})
     except Exception as e:
         print(f"Error during LLM call: {e}")

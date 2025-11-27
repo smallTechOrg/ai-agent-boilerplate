@@ -1,9 +1,10 @@
 from http import HTTPStatus
 from config import max_input_length, agent_type , status_type
 import uuid
+from db import sync_connection
 
-def validate_input(input, request_type):
-    """Validates the chat user input. Returns (is_valid, message)."""
+def validate_input(input, request_type, address):
+    """Validates the chat user input. Returns (is_valid, message, address)."""
     input = input.strip()
     if not input:
         return {"is_valid":False, "message":"Please enter a message before sending."}
@@ -16,7 +17,19 @@ def validate_input(input, request_type):
         request_type = agent_type(request_type.strip().lower()).value  # <-- return string value
     except (ValueError, AttributeError):
         request_type = agent_type.GENERIC.value  # <-- fallback string
-    return {"is_valid":True, "message":request_type}
+    
+
+    sync_connection.rollback()    
+    with sync_connection.cursor() as cur:
+        cur.execute("SELECT key FROM domains WHERE address = %s;", (address,))
+        domain = cur.fetchone()[0]
+
+        if not domain:
+            print("Given Address does not exist")
+            return  {"is_valid":False, "message":"Incorrect Address"}
+        
+    
+    return {"is_valid":True, "message":"Input is valid", "data":{"request_type":request_type, "domain":domain}}
 
 def is_valid_uuid(value: str) -> bool:
     """Check if a string is a valid UUID."""

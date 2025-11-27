@@ -1,9 +1,8 @@
 import psycopg
-from db import sync_connection
 import json
 from pathlib import Path
 from functools import lru_cache
-from config import first_chat_message
+from config import first_chat_message, agent_type, DEFAULT_DOMAIN
 
 
 def load_json(path: Path):
@@ -27,18 +26,16 @@ def check_and_insert_default_prompts(sync_connection):
             # Check if the table is empty
             cur.execute("SELECT COUNT(*) FROM prompts;")
             count = cur.fetchone()[0]
-
             if count == 0:
                 print("Prompts table is empty. Inserting default prompts...")
 
                 default_prompts = [
-                    ('common', 'info-extraction', 'fetch-name', Path("prompts/name_prompt.json")),
-                    ('common', 'info-extraction', 'fetch-info',  Path("prompts/info_prompt.json")),
-                    ('common', 'test', 'test', Path("prompts/generic_prompt.json")),
-                    ('common', 'contact_us', 'system', Path("prompts/sales_prompt.json")),
-                    ('smallTech.in', 'contact_us', 'company', Path("prompts/smallTech.json")),
-
-                    ('smalltech.in', 'contact_us', 'intro', first_chat_message),
+                    (DEFAULT_DOMAIN, 'generic', 'fetch-name', Path("prompts/name_prompt.json")),
+                    (DEFAULT_DOMAIN, 'sales', 'fetch-contact-info',  Path("prompts/info_prompt.json")),
+                    (DEFAULT_DOMAIN, 'sales', 'base-prompt', Path("prompts/sales_prompt.json")),
+                    (DEFAULT_DOMAIN, 'sales', 'company', Path("prompts/company.json")),
+                    (DEFAULT_DOMAIN, 'sales', 'intro-message', first_chat_message),
+                    (DEFAULT_DOMAIN, 'generic', 'system', Path("prompts/generic_prompt.json")),
                 ]
 
                 for domain, agent_type, prompt_type, text in default_prompts:
@@ -70,5 +67,23 @@ def check_and_insert_default_prompts(sync_connection):
         sync_connection.rollback()
 
 
-if __name__ == "__main__":
-    check_and_insert_default_prompts(sync_connection)
+def check_and_insert_default_domains(sync_connection):
+    with sync_connection.cursor() as cur:
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS domains (
+            id SERIAL PRIMARY KEY,
+            key TEXT NOT NULL,
+            address TEXT,
+            parent INTEGER REFERENCES domains(id) ON DELETE SET NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (key, address)
+        );
+        
+        -- Insert a default row if it doesn't exist
+        INSERT INTO domains (key, address, parent)
+        VALUES ('COMMON', 'example.com', NULL)
+        ON CONFLICT (key, address) DO NOTHING;
+        """
+        cur.execute(create_table_sql)
+        sync_connection.commit()
+

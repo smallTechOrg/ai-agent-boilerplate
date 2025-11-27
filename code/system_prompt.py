@@ -2,9 +2,53 @@ import json
 from pathlib import Path
 from functools import lru_cache
 from db import sync_connection
-from prompts_table import check_and_insert_default_prompts
+from config import DEFAULT_DOMAIN, agent_type
 
-check_and_insert_default_prompts(sync_connection)
+def get_generic_prompt():
+    data = load_prompt_from_db(DEFAULT_DOMAIN, "generic", "test")
+
+    if isinstance(data, dict) and "system" in data:
+        return "\n".join(data["system"])
+
+    # If plain text:
+    return data["system"]
+
+def get_prompt(domain, agent_type, prompt_type):
+    # Load both prompts from DB
+    if prompt_type == "system":
+
+        if agent_type == "sales":
+            common_data = load_prompt_from_db(domain, agent_type, "base-prompt")
+            if common_data is None:
+                # Use default or find parent.
+                common_data = load_prompt_from_db(DEFAULT_DOMAIN, agent_type, "base-prompt")
+            company_data = load_prompt_from_db(domain, agent_type, "company")    
+            if company_data is None:
+                company_data = load_prompt_from_db(DEFAULT_DOMAIN, agent_type, "company") 
+                
+
+            # Extract "system" arrays safely
+            common_parts = common_data["system"] if isinstance(common_data, dict) and "system" in common_data else [common_data]
+            company_parts = company_data["system"] if isinstance(company_data, dict) and "system" in company_data else [company_data]
+
+            # Merge arrays
+            merged_parts = common_parts + company_parts
+
+            # Join them into one prompt string
+            return "\n".join(merged_parts)
+        else:
+            data =  load_prompt_from_db(domain, agent_type, prompt_type)
+            if isinstance(data, dict) and "system" in data:
+                return "\n".join(data["system"])
+            return data["system"]
+    else:
+        data =  load_prompt_from_db(domain, agent_type, prompt_type)
+        if isinstance(data, dict) and "system" in data:
+            return "\n".join(data["system"])
+        return data["system"]
+
+
+
 def load_prompt_from_db(domain: str, agent_type: str, prompt_type: str):
     """
     Fetch a prompt's text from the DB (JSON or plain text), cache for fast access.
@@ -21,7 +65,8 @@ def load_prompt_from_db(domain: str, agent_type: str, prompt_type: str):
             row = cur.fetchone()
 
             if not row:
-                raise ValueError(f"Prompt not found in DB: {domain}/{agent_type}/{prompt_type}")
+                print(f"Prompt not found in DB: {domain}/{agent_type}/{prompt_type}")
+                return None
 
             text = row[0]
 
@@ -34,39 +79,34 @@ def load_prompt_from_db(domain: str, agent_type: str, prompt_type: str):
 
     except Exception as e:
         raise RuntimeError(f"Failed to load prompt from DB: {e}")
-    
-def get_generic_prompt():
-    data = load_prompt_from_db("common", "test", "test")
 
-    if isinstance(data, dict) and "system" in data:
-        return "\n".join(data["system"])
+# def find_parent(domain):
+#     """
+#     Find the parent domain
+#     """
+#     try:
+#         with sync_connection.cursor() as cur:
+#             cur.execute(""" 
+#                 SELECT parent 
+#                 FROM domains
+#                 WHERE domain = %s
+#                 LIMIT 1;
+#             """, (domain))
 
-    # If plain text:
-    return data["system"]
+#             parent = cur.fetchone()[0]
 
-def get_sales_prompt():
-    # Load both prompts from DB
-    common_data = load_prompt_from_db("common", "contact_us", "system")
-    company_data = load_prompt_from_db("smallTech.in", "contact_us", "company")
+#             if not row:
+#                 raise ValueError(f"Prompt not found in DB: {domain}/{agent_type}/{prompt_type}")
 
-    # Extract "system" arrays safely
-    common_parts = common_data["system"] if isinstance(common_data, dict) and "system" in common_data else [common_data]
-    company_parts = company_data["system"] if isinstance(company_data, dict) and "system" in company_data else [company_data]
+#             text = row[0]
 
-    # Merge arrays
-    merged_parts = common_parts + company_parts
+#             # Try to parse JSON if stored as JSON string
+#             try:
+#                 parsed = json.loads(text)
+#                 return parsed
+#             except json.JSONDecodeError:
+#                 return text  # raw string
 
-    # Join them into one prompt string
-    return "\n".join(merged_parts)
+#     except Exception as e:
+#         raise RuntimeError(f"Failed to load prompt from DB: {e}")
 
-def get_name_prompt():
-    data = load_prompt_from_db("common", "info-extraction", "fetch-name")
-    if isinstance(data, dict) and "system" in data:
-        return "\n".join(data["system"])
-    return data["system"]
-
-def get_info_prompt():
-    data = load_prompt_from_db("common", "info-extraction", "fetch-info")
-    if isinstance(data, dict) and "system" in data:
-        return "\n".join(data["system"])
-    return data["system"]    

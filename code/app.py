@@ -9,6 +9,8 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from history import get_history
 from leads import get_all_chat_info
 from leads_update import update_chat_info
+import traceback
+
 app = Flask(__name__)
 CORS(app)
 
@@ -109,6 +111,8 @@ def chat_api():
         return jsonify({'success': True, 'response': bot_response})
     except Exception as e:
         print(f"Error during LLM call: {e}")
+        err = traceback.format_exc()
+        print(err)
         return jsonify({
             'success': False,
             'error': "Sorry, something went wrong while processing your message. Please try again later."}), HTTPStatus.INTERNAL_SERVER_ERROR

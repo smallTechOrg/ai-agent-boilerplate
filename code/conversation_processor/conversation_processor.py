@@ -23,7 +23,7 @@ def process_conversation(user_input, session_id, request_type, domain):
             print(f"[PROCESSOR] info detected in session {session_id}")
                 
             # Save information to database
-            _save_info_to_database(session_id, info_data, user_input, request_type)
+            _save_info_to_database(session_id, info_data, user_input, request_type, domain)
             print(f"[PROCESSOR] information saved for session {session_id}.")
         else:
             print(f"[PROCESSOR] No Info detected in current message for session {session_id}")
@@ -126,7 +126,7 @@ def _detect_info_with_llm(message, request_type, domain):
         print(f"[INFO_DETECTION] Error in LLM contact info detection: {e}")
         return {"contact_name": "", "email": "", "mobile": "", "country": ""}
     
-def _save_info_to_database(session_id, info_data, original_message, request_type):
+def _save_info_to_database(session_id, info_data, original_message, request_type, domain):
     """
     Save detected info to chat_info table.
     
@@ -164,9 +164,10 @@ def _save_info_to_database(session_id, info_data, original_message, request_type
                 country,
                 mobile,
                 request_type,
+                domain,
                 metadata,
                 created_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s,%s)
             ON CONFLICT (session_id) 
             DO UPDATE SET 
                 contact_name = CASE 
@@ -186,6 +187,7 @@ def _save_info_to_database(session_id, info_data, original_message, request_type
                     ELSE chat_info.mobile 
                 END,
                 request_type = EXCLUDED.request_type,
+                domain = EXCLUDED.domain,
                 metadata = EXCLUDED.metadata,
                 created_at = CASE 
                     WHEN chat_info.created_at IS NULL THEN EXCLUDED.created_at 
@@ -200,6 +202,7 @@ def _save_info_to_database(session_id, info_data, original_message, request_type
                 country,
                 mobile,
                 request_type,
+                domain,
                 json.dumps(metadata),
                 datetime.now()
             ))

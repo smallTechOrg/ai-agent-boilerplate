@@ -34,7 +34,7 @@ def check_and_insert_default_prompts(sync_connection):
                     (DEFAULT_DOMAIN, 'sales', 'fetch-contact-info',  Path("prompts/info_prompt.json")),
                     (DEFAULT_DOMAIN, 'sales', 'base-prompt', Path("prompts/sales_prompt.json")),
                     (DEFAULT_DOMAIN, 'sales', 'company', Path("prompts/company.json")),
-                    (DEFAULT_DOMAIN, 'sales', 'intro-message', first_chat_message),
+                    (DEFAULT_DOMAIN, 'sales', 'intro-message', Path("prompts/intro_message.json")),
                     (DEFAULT_DOMAIN, 'generic', 'system', Path("prompts/generic_prompt.json")),
                 ]
 

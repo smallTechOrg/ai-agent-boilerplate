@@ -4,14 +4,6 @@ from functools import lru_cache
 from db import sync_connection
 from config import DEFAULT_DOMAIN, agent_type
 
-def get_generic_prompt():
-    data = load_prompt_from_db(DEFAULT_DOMAIN, "generic", "test")
-
-    if isinstance(data, dict) and "system" in data:
-        return "\n".join(data["system"])
-
-    # If plain text:
-    return data["system"]
 
 def get_prompt(domain, agent_type, prompt_type):
     # Load both prompts from DB

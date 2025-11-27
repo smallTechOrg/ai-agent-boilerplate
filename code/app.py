@@ -2,7 +2,7 @@ from http import HTTPStatus
 import os
 from flask import Flask, render_template, request, jsonify
 from llm_api import get_groq_response
-from validators import validate_input, validate_session_id, validate_update_data
+from validators import validate_input, validate_session_id, validate_update_data, validate_address
 from config import DEBUG
 from flask_cors import CORS 
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -41,12 +41,19 @@ def hello():
 @app.route("/history", methods=["GET"])
 def history_endpoint():
     session_id = request.args.get("session_id")
+    address = request.args.get("address")
+
     # Validate
     result = validate_session_id(session_id)
     if not result["is_valid"]:
         return jsonify({"error": result["message"]}), result["status"]
+    
+    valid_address, domain  = validate_address(address)
+    if not valid_address:
+        return jsonify({"error": "Incorrect Address"}), HTTPStatus.BAD_REQUEST
+    
     # Continue if valid
-    history_data, status = get_history(session_id)
+    history_data, status = get_history(session_id, domain)
     return jsonify(history_data), status
 
 @app.route('/chat-info', methods=['GET'])

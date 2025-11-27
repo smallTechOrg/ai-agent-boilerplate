@@ -130,6 +130,13 @@ paths:
             type: string
             format: UUID
           description: Unique session identifier
+        - name: address
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Domain address of the original request
+          example: example.com       
       responses:
         '200':
           description: Chat history retrieved successfully
@@ -185,7 +192,7 @@ paths:
                     - type: ai
                       content: "Hello! I’m your assistant. How can I help you today?"
         '400':
-          description: Invalid session_id format
+          description: Invalid session_id format or incorrect address
         '500':
           description: Server error
   /chat-info:

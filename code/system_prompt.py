@@ -1,55 +1,95 @@
 import json
 from pathlib import Path
 from functools import lru_cache
-
-GENERIC_PROMPT_PATH = Path(__file__).parent / "prompts" / "generic_prompt.json"
-
-@lru_cache()
-def get_generic_prompt_data():
-    with open(GENERIC_PROMPT_PATH, encoding="utf-8") as f:
-        return json.load(f)
-
-def get_generic_prompt():
-    return get_generic_prompt_data()["system"]
-
-SALES_PROMPT_PATH = Path(__file__).parent / "prompts" / "sales_prompt.json"
-
-@lru_cache()
-def get_sales_prompt_data():
-    with open(SALES_PROMPT_PATH, encoding="utf-8") as f:
-        return json.load(f)
-
-def get_sales_prompt():
-    prompt_parts = get_sales_prompt_data()["system"]
-    # Join all parts and format with the actual message
-    sales_prompt = "\n".join(prompt_parts)
-    return sales_prompt
+from db import sync_connection
+from config import DEFAULT_DOMAIN, agent_type
 
 
+def get_prompt(domain, agent_type, prompt_type):
+    # Load both prompts from DB
+    if prompt_type == "system":
+
+        if agent_type == "sales":
+            common_data = load_prompt_from_db(domain, agent_type, "base-prompt")
+            # if common_data is None:
+            #     # Use default or find parent.
+            #     common_data = load_prompt_from_db(DEFAULT_DOMAIN, agent_type, "base-prompt")
+            company_data = load_prompt_from_db(domain, agent_type, "company")    
+            # if company_data is None:
+            #     company_data = load_prompt_from_db(DEFAULT_DOMAIN, agent_type, "company") 
+                
+            # Extract "system" arrays safely
+            common_parts = common_data["system"] if isinstance(common_data, dict) and "system" in common_data else [common_data]
+            company_parts = company_data["system"] if isinstance(company_data, dict) and "system" in company_data else [company_data]
+
+            # Merge arrays
+            merged_parts = common_parts + company_parts
+
+            # Join them into one prompt string
+            return "\n".join(merged_parts)
+        else:
+            data =  load_prompt_from_db(domain, agent_type, prompt_type)
+            if isinstance(data, dict) and "system" in data:
+                return "\n".join(data["system"])
+            return data["system"]
+    else:
+        data =  load_prompt_from_db(domain, agent_type, prompt_type)
+        if isinstance(data, dict) and "system" in data:
+            return "\n".join(data["system"])
+        return data["system"]
 
 
-NAME_PROMPT_PATH = Path(__file__).parent / "prompts" / "name_prompt.json"
 
-@lru_cache()
-def get_name_prompt_data():
-    with open(NAME_PROMPT_PATH, encoding="utf-8") as f:
-        return json.load(f)
+def load_prompt_from_db(domain: str, agent_type: str, prompt_type: str):
+    """
+    Fetch a prompt's text from the DB (JSON or plain text), cache for fast access.
+    """
+    try:
+        row = find_prompt(domain, agent_type, prompt_type)
 
-def get_name_prompt():
-    prompt_parts = get_name_prompt_data()["system"]
-    # Join all parts and format with the actual message
-    name_prompt = "\n".join(prompt_parts)
-    return name_prompt
+        if row is None:
+            print(f"Prompt not found in DB: {domain}/{agent_type}/{prompt_type}, looking for parent prompt")
+            parent_domain = find_parent_key(domain) 
+            row = find_prompt(parent_domain, agent_type, prompt_type)
+            if row is None:
+                print(f"Prompt not found in DB for parent Domain: {domain}/{agent_type}/{prompt_type}")
+                return None
 
-INFO_PROMPT_PATH = Path(__file__).parent / "prompts" / "info_prompt.json"
+        text = row[0]
 
-@lru_cache()
-def get_info_prompt_data():
-    with open(INFO_PROMPT_PATH, encoding="utf-8") as f:
-        return json.load(f)
+        # Try to parse JSON if stored as JSON string
+        try:
+            parsed = json.loads(text)
+            return parsed
+        except json.JSONDecodeError:
+            return text  # raw string
 
-def get_info_prompt():
-    prompt_parts = get_info_prompt_data()["system"]
-    # Join all parts and format with the actual message
-    info_prompt = "\n".join(prompt_parts)
-    return info_prompt
+    except Exception as e:
+        raise RuntimeError(f"Failed to load prompt from DB: {e}")
+
+def find_parent_key(key):
+    with sync_connection.cursor() as cur:
+        cur.execute("""
+            SELECT parent.key
+            FROM domains child
+            LEFT JOIN domains parent ON child.parent = parent.id
+            WHERE child.key = %s;
+        """, (key,))
+        row = cur.fetchone()
+        return row[0] if row else None
+
+def find_prompt(domain, agent_type, prompt_type):
+    try:
+        with sync_connection.cursor() as cur:
+            cur.execute("""
+                SELECT text 
+                FROM prompts
+                WHERE domain = %s AND agent_type = %s AND type = %s
+                LIMIT 1;
+            """, (domain, agent_type, prompt_type))
+
+            row = cur.fetchone()
+            return row
+        
+    except Exception as e:
+        raise RuntimeError(f"Failed to load prompt from DB: {e}")

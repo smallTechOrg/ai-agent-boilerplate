@@ -2,7 +2,8 @@ from http import HTTPStatus
 import uuid
 from db import sync_connection, table_name
 from langchain_postgres import PostgresChatMessageHistory
-from config import first_chat_message
+from system_prompt import get_prompt
+from config import DEFAULT_DOMAIN
 
 
 # Database setup 
@@ -22,14 +23,15 @@ def _message_mapping(history):
         })
     return messages
 
-def get_history(session_id: str):
+def get_history(session_id: str, domain):
     """Retrieve chat history for a session_id as a list of dicts."""
     try:
         history = get_session_history(session_id)
         status = HTTPStatus.OK
         if not history.messages:
             # session exists
-            history.add_ai_message(first_chat_message)
+            first_message = get_prompt(domain, "sales", "intro-message")
+            history.add_ai_message(first_message)
             status = HTTPStatus.CREATED
         messages = _message_mapping(history)
 

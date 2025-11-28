@@ -79,7 +79,7 @@ paths:
                     description: Bot response message
                     example: "Hi there! How can I help you today?"
         "400":
-          description: Invalid input error
+          description: Invalid input or address does not exist
           content:
             application/json:
               schema:
@@ -90,7 +90,14 @@ paths:
                     example: false
                   error:
                     type: string
-                    example: "Input cannot be empty."
+                oneOf:
+                  - properties:
+                      error:
+                        example: "Input cannot be empty."
+                  - properties:
+                      error:
+                        example: "Enter correct address."
+
         "500":
           description: Server error during LLM call
           content:
@@ -117,7 +124,7 @@ paths:
           schema:
             type: string
             format: UUID
-          description: Unique session identifier
+          description: Unique session identifier    
       responses:
         '200':
           description: Chat history retrieved successfully
@@ -173,7 +180,7 @@ paths:
                     - type: ai
                       content: "Hello! I’m your assistant. How can I help you today?"
         '400':
-          description: Invalid session_id format
+          description: Invalid session_id format or incorrect address
         '500':
           description: Server error
   /chat-info:

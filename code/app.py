@@ -2,15 +2,19 @@ from http import HTTPStatus
 import os
 from flask import Flask, render_template, request, jsonify
 from llm_api import get_groq_response
-from validators import validate_input, validate_session_id, validate_update_data
+from validators import validate_input, validate_session_id, validate_update_data, validate_address
 from config import DEBUG
 from flask_cors import CORS 
 from flask_swagger_ui import get_swaggerui_blueprint
 from history import get_history
 from leads import get_all_chat_info
 from leads_update import update_chat_info
+from urllib.parse import urlparse
+import traceback
+
 app = Flask(__name__)
 CORS(app)
+
 
 # Swagger UI setup
 SWAGGER_URL = '/docs'  # URL for exposing Swagger UI
@@ -39,12 +43,19 @@ def hello():
 @app.route("/history", methods=["GET"])
 def history_endpoint():
     session_id = request.args.get("session_id")
+    address = get_request_address()
+
     # Validate
     result = validate_session_id(session_id)
     if not result["is_valid"]:
         return jsonify({"error": result["message"]}), result["status"]
+    
+    valid_address, domain  = validate_address(address)
+    if not valid_address:
+        return jsonify({"error": "Incorrect Address"}), HTTPStatus.BAD_REQUEST
+    
     # Continue if valid
-    history_data, status = get_history(session_id)
+    history_data, status = get_history(session_id, domain)
     return jsonify(history_data), status
 
 @app.route('/chat-info', methods=['GET'])
@@ -93,23 +104,33 @@ def chat_api():
     input = data.get('input', '')
     session_id = data.get('session_id')
     request_type = data.get('request_type')
+    address = get_request_address()
     # Input Validation
 
-    result = validate_input(input, request_type)
+    result = validate_input(input, request_type, address)
 
     if not result["is_valid"]:
         return jsonify({'success': False, 'error': result["message"]}), HTTPStatus.BAD_REQUEST
-    request_type = result["message"] 
+    request_type = result["data"]["request_type"]
+    domain = result["data"]["domain"]
 
     # Get response from LLM
     try:
-        bot_response = get_groq_response(input.strip(), session_id, request_type)
+        bot_response = get_groq_response(input.strip(), session_id, request_type, domain)
         return jsonify({'success': True, 'response': bot_response})
     except Exception as e:
         print(f"Error during LLM call: {e}")
+        err = traceback.format_exc()
+        print(err)
         return jsonify({
             'success': False,
             'error': "Sorry, something went wrong while processing your message. Please try again later."}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+def get_request_address():
+    origin = request.headers.get("Origin")
+    if origin:
+        return urlparse(origin).netloc
+    return None
 
 if __name__ == '__main__':
     app.run(debug=DEBUG,port=5000)

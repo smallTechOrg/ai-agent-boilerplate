@@ -4,9 +4,9 @@ from db import sync_connection
 from langchain_groq import ChatGroq
 from config import GROQ_API_KEY, GROQ_MODEL_NAME, agent_type
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from system_prompt import get_name_prompt, get_info_prompt
+from system_prompt import get_prompt
 
-def process_conversation(user_input, session_id, request_type):
+def process_conversation(user_input, session_id, request_type, domain):
     """
     Main hook function that processes each conversation exchange.
     Uses LLM to detect if user provided their contact info in the current input.
@@ -17,13 +17,13 @@ def process_conversation(user_input, session_id, request_type):
         # Update request_type for the new messages in this session
         _update_session_request_type(session_id, request_type)
         # Choose llm function based on request type
-        info_data = _detect_info_with_llm(user_input, request_type)
+        info_data = _detect_info_with_llm(user_input, request_type, domain)
         
         if info_data and _has_valid_info(info_data, request_type):
             print(f"[PROCESSOR] info detected in session {session_id}")
                 
             # Save information to database
-            _save_info_to_database(session_id, info_data, user_input, request_type)
+            _save_info_to_database(session_id, info_data, user_input, request_type, domain)
             print(f"[PROCESSOR] information saved for session {session_id}.")
         else:
             print(f"[PROCESSOR] No Info detected in current message for session {session_id}")
@@ -84,7 +84,7 @@ def _has_valid_info(info_data, request_type):
         # For non-sales, just check contact)name
         return info_data.get('name_detected', False) and info_data.get('contact_name', '').strip()
 
-def _detect_info_with_llm(message, request_type):
+def _detect_info_with_llm(message, request_type, domain):
     """
     Use LLM to detect if the user provided their contact info in the message.
     
@@ -100,9 +100,9 @@ def _detect_info_with_llm(message, request_type):
 
         # prompt based on request type
         if request_type == agent_type.SALES:
-            prompt_content = get_info_prompt().format(message=message)
+            prompt_content = get_prompt(domain, request_type, "fetch-contact-info").format(message=message)
         else:
-            prompt_content = get_name_prompt().format(message=message)
+            prompt_content = get_prompt(domain, request_type,"fetch-name").format(message=message)
 
         # Create the prompt
         full_prompt = [SystemMessage(content=prompt_content)]
@@ -126,7 +126,7 @@ def _detect_info_with_llm(message, request_type):
         print(f"[INFO_DETECTION] Error in LLM contact info detection: {e}")
         return {"contact_name": "", "email": "", "mobile": "", "country": ""}
     
-def _save_info_to_database(session_id, info_data, original_message, request_type):
+def _save_info_to_database(session_id, info_data, original_message, request_type, domain):
     """
     Save detected info to chat_info table.
     
@@ -164,9 +164,10 @@ def _save_info_to_database(session_id, info_data, original_message, request_type
                 country,
                 mobile,
                 request_type,
+                domain,
                 metadata,
                 created_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s,%s)
             ON CONFLICT (session_id) 
             DO UPDATE SET 
                 contact_name = CASE 
@@ -186,6 +187,7 @@ def _save_info_to_database(session_id, info_data, original_message, request_type
                     ELSE chat_info.mobile 
                 END,
                 request_type = EXCLUDED.request_type,
+                domain = EXCLUDED.domain,
                 metadata = EXCLUDED.metadata,
                 created_at = CASE 
                     WHEN chat_info.created_at IS NULL THEN EXCLUDED.created_at 
@@ -200,6 +202,7 @@ def _save_info_to_database(session_id, info_data, original_message, request_type
                 country,
                 mobile,
                 request_type,
+                domain,
                 json.dumps(metadata),
                 datetime.now()
             ))

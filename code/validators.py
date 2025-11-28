@@ -1,9 +1,10 @@
 from http import HTTPStatus
 from config import max_input_length, agent_type , status_type
 import uuid
+from db import sync_connection
 
-def validate_input(input, request_type):
-    """Validates the chat user input. Returns (is_valid, message)."""
+def validate_input(input, request_type, address):
+    """Validates the chat user input. Returns (is_valid, message, address)."""
     input = input.strip()
     if not input:
         return {"is_valid":False, "message":"Please enter a message before sending."}
@@ -16,8 +17,14 @@ def validate_input(input, request_type):
         request_type = agent_type(request_type.strip().lower()).value  # <-- return string value
     except (ValueError, AttributeError):
         request_type = agent_type.GENERIC.value  # <-- fallback string
-    return {"is_valid":True, "message":request_type}
+    valid_address, domain  = validate_address(address)
+    if not valid_address:
+        return {"is_valid":False, "message":"Incorrect Address"}        
+    
+    return {"is_valid":True, "message":"Input is valid", "data":{"request_type":request_type, "domain":domain}}
 
+
+    
 def is_valid_uuid(value: str) -> bool:
     """Check if a string is a valid UUID."""
     try:
@@ -55,3 +62,16 @@ def validate_update_data(update_data, session_id, status, is_active):
     except Exception as e:
         print(f"[Error] {e}")
         return {"is_valid":False, "message":"Internal Server Error", "status":HTTPStatus.INTERNAL_SERVER_ERROR}
+    
+def validate_address(address):
+    """Checks whether the given address exists. Returns (is_valid, domain or message)."""
+    sync_connection.rollback()
+    
+    with sync_connection.cursor() as cur:
+        cur.execute("SELECT key FROM domains WHERE address = %s;", (address,))
+        row = cur.fetchone()
+
+        if not row:
+            return False, "Incorrect Address"
+        
+        return True, row[0]

@@ -9,10 +9,12 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from history import get_history
 from leads import get_all_chat_info
 from leads_update import update_chat_info
+from urllib.parse import urlparse
 import traceback
 
 app = Flask(__name__)
 CORS(app)
+
 
 # Swagger UI setup
 SWAGGER_URL = '/docs'  # URL for exposing Swagger UI
@@ -41,7 +43,7 @@ def hello():
 @app.route("/history", methods=["GET"])
 def history_endpoint():
     session_id = request.args.get("session_id")
-    address = request.args.get("address")
+    address = get_request_address()
 
     # Validate
     result = validate_session_id(session_id)
@@ -102,7 +104,7 @@ def chat_api():
     input = data.get('input', '')
     session_id = data.get('session_id')
     request_type = data.get('request_type')
-    address = data.get('address')
+    address = get_request_address()
     # Input Validation
 
     result = validate_input(input, request_type, address)
@@ -123,6 +125,12 @@ def chat_api():
         return jsonify({
             'success': False,
             'error': "Sorry, something went wrong while processing your message. Please try again later."}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+def get_request_address():
+    origin = request.headers.get("Origin")
+    if origin:
+        return urlparse(origin).netloc
+    return None
 
 if __name__ == '__main__':
     app.run(debug=DEBUG,port=5000)

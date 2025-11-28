@@ -63,11 +63,6 @@ paths:
                   type: string
                   description: The type of the query/agent required
                   example: "sales"
-                address:
-                  type: string
-                  description: Domain address of the original request
-                  example: "example.com"
-
       responses:
         "200":
           description: Successful response from the chatbot
@@ -129,14 +124,7 @@ paths:
           schema:
             type: string
             format: UUID
-          description: Unique session identifier
-        - name: address
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Domain address of the original request
-          example: example.com       
+          description: Unique session identifier    
       responses:
         '200':
           description: Chat history retrieved successfully

@@ -13,7 +13,7 @@ GROQ_MODEL_NAME = os.environ.get("GROQ_MODEL_NAME", "meta-llama/llama-4-scout-17
 
 # Chat input limits
 max_input_length = 10000
-
+DEFAULT_DOMAIN = "COMMON"
 # Database and table name
 db_name = 'chatdb'
 table_name  = 'chat_table'
@@ -44,8 +44,6 @@ DATABASE_URL = DATABASE_URL + db_name
 
 print("Connecting to:", DATABASE_URL)
 
-
-first_chat_message = "Hi, Welcome to smallTech 👋. I'm here to help with any IT-related questions or concerns you might bring. What brings you to our website today?"
 class agent_type(str, Enum):
     SALES = "sales"
     GENERIC = "generic"

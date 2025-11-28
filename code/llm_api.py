@@ -3,7 +3,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from langchain_groq import ChatGroq
 from config import GROQ_API_KEY, GROQ_MODEL_NAME, table_name, agent_type
-from system_prompt import get_sales_prompt, get_generic_prompt
+from system_prompt import get_prompt
 from db import sync_connection
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -11,13 +11,12 @@ from conversation_processor.conversation_processor import process_conversation
 from history import get_session_history
 
 
-def get_groq_response(input_text, session_id, request_type):
+def get_groq_response(input_text, session_id, request_type, domain):
     
-    # Choose prompt based on request type
-    if request_type == agent_type.SALES:
-        system_prompt = get_sales_prompt()
-    else:
-        system_prompt = get_generic_prompt()
+    # Choose prompt based on request type & domain
+    prompt_type = "system"
+    system_prompt = get_prompt(domain, request_type, prompt_type)
+
     
     # Rest of your existing code...
     prompt = ChatPromptTemplate.from_messages([
@@ -65,7 +64,7 @@ def get_groq_response(input_text, session_id, request_type):
 
     # Handle conversation processing
     # Process conversation asynchronously to avoid blocking the response
-    _process_conversation_async(input_text, session_id, request_type)
+    _process_conversation_async(input_text, session_id, request_type, domain)
 
 
 
@@ -73,11 +72,11 @@ def get_groq_response(input_text, session_id, request_type):
 
 
 
-def _process_conversation_async(input_text, session_id, request_type):
+def _process_conversation_async(input_text, session_id, request_type, domain):
     """Process conversation asynchronously using ThreadPoolExecutor."""
     def process_in_background():
         try:
-            process_conversation(input_text, session_id, request_type)
+            process_conversation(input_text, session_id, request_type, domain)
             print("[LLM_API] Async conversation processing completed")
         except Exception as processing_error:
             print(f"[LLM_API] Warning: Async conversation processing failed: {processing_error}")

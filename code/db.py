@@ -140,7 +140,7 @@ def ensure_domains_table_exists(sync_connection):
                 id SERIAL PRIMARY KEY,
                 key TEXT NOT NULL,
                 address TEXT UNIQUE NOT NULL,
-                parent TEXT REFERENCES domains(id) ON DELETE SET NULL,
+                parent INTEGER REFERENCES domains(id) ON DELETE SET NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
             -- Insert a default row if it doesn't exist

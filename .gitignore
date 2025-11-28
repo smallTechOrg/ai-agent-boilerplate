@@ -9,3 +9,5 @@ code/test/test_report.html
 # Pytest cache
 .pytest_cache/
 .env
+# For autoenv
+.envrc

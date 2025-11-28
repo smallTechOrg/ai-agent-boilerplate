@@ -2,7 +2,7 @@ import psycopg
 import json
 from pathlib import Path
 from functools import lru_cache
-from config import first_chat_message, agent_type, DEFAULT_DOMAIN
+from config import agent_type, DEFAULT_DOMAIN
 
 
 def load_json(path: Path):
@@ -48,7 +48,6 @@ def check_and_insert_default_prompts(sync_connection):
                             continue
                         text_to_insert = text_json
                     else:
-                        # Normal string (like `first_chat_message`)
                         text_to_insert = text
 
 

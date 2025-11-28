@@ -44,8 +44,6 @@ DATABASE_URL = DATABASE_URL + db_name
 
 print("Connecting to:", DATABASE_URL)
 
-
-first_chat_message = "Hi, I'm here to help with any questions or concerns you might have. What brings you to our website today?"
 class agent_type(str, Enum):
     SALES = "sales"
     GENERIC = "generic"

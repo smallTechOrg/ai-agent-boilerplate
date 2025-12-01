@@ -15,7 +15,7 @@ def process_conversation(user_input, session_id, request_type, domain):
     try:
         print(f"[PROCESSOR] Processing session {session_id} for contact info detection...")  
         # Update request_type for the new messages in this session
-        _update_session_request_type(session_id, request_type)
+        _update_session_request_type(session_id, request_type, domain)
         # Choose llm function based on request type
         info_data = _detect_info_with_llm(user_input, request_type, domain)
         
@@ -33,7 +33,7 @@ def process_conversation(user_input, session_id, request_type, domain):
         print(f"[PROCESSOR] Error in conversation processor: {e}")
         # Don't let processing errors break the chat flow
 
-def _update_session_request_type(session_id, request_type):
+def _update_session_request_type(session_id, request_type, domain):
     """
     Insert a new chat_info row with (session_id, request_type)
     only if session_id does not already exist.
@@ -44,16 +44,17 @@ def _update_session_request_type(session_id, request_type):
             insert_query = """
             INSERT INTO chat_info (
                 session_id,
-                request_type
-            ) VALUES (%s, %s)
+                request_type,
+                domain
+            ) VALUES (%s, %s, %s)
             ON CONFLICT (session_id) DO NOTHING
             """
 
-            cur.execute(insert_query, (session_id, request_type))
+            cur.execute(insert_query, (session_id, request_type, domain))
             sync_connection.commit()
 
             if cur.rowcount and cur.rowcount > 0:
-                print(f"[CREATE] Inserted new chat_info for session_id={session_id} with request_type='{request_type}'")
+                print(f"[CREATE] Inserted new chat_info for session_id={session_id} with request_type='{request_type}'and domain ='{domain}'")
             else:
                 print(f"[CREATE] session_id={session_id} already exists — no action taken")
 

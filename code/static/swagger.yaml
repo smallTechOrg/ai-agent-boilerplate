@@ -234,6 +234,17 @@ paths:
                           type: string
                           description: Analyst's remark for that session id
                           example: "Send a mail and waiting for a review"
+
+                        doamin:
+                          type: string
+                          description: request frontend's Domain
+                          example: "SMALLTECH"
+
+                        time:
+                          type: string
+                          description: Date and time when contact info is detected
+                          example: "2025-12-01 12:38:54.331648+05:30"
+
         "500":
           description: Server error while fetching chat info
           content:

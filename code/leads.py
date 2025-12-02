@@ -17,7 +17,9 @@ def get_all_chat_info() -> Tuple[List[Dict[str, Any]], HTTPStatus]:
                     COALESCE(mobile, '') as mobile_number,
                     COALESCE(country, '') as country,
                     COALESCE(status, 'OPEN') as status,
-                    COALESCE(remarks, '') as remarks
+                    COALESCE(remarks, '') as remarks,
+                    COALESCE(domain) as domain,
+                    COALESCE(created_at) as time                        
                 FROM chat_info
                 WHERE is_active is TRUE
                 ORDER BY created_at DESC;

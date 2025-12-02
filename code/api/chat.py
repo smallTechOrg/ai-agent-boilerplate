@@ -7,7 +7,8 @@ from history import get_history
 from leads import get_all_chat_info
 from leads_update import update_chat_info
 from llm_api import get_groq_response
-from validators import validate_address, validate_input, validate_session_id, validate_update_data
+from api.validators import ValidationResponse, validate_address, validate_session_id, validate_update_data, chat_api_validate
+from config import max_input_length, agent_type , status_type
 
 chat_bp = Blueprint("chat", __name__)
 
@@ -15,33 +16,50 @@ chat_bp = Blueprint("chat", __name__)
 # chat_api is a Flask route function defined that acts as the backend API endpoint for chat exchanges. It is the API endpoint your frontend calls to send user messages and receive chatbot responses.
 # It receives a JSON request containing the user's chat input from the frontend, validates the input, sends the validated input to the LLM, and returns a JSON response.
 
+class APIResponse:
+    def __init__(self, validation_response=None, data=None):
+        self.validation_response = validation_response 
+        self.data = data
+    
+    def response(self, http_status=None):
+        if http_status == HTTPStatus.BAD_REQUEST:
+            return jsonify({
+                'success': self.validation_response.is_valid,
+                'error': self.validation_response.message}), http_status
+        elif http_status == HTTPStatus.OK:
+            return jsonify({
+                'success': True, 
+                'response': self.data
+                }), http_status
+        else:
+            return jsonify({
+            'success': False,
+            'error': "Sorry, something went wrong while processing your message. Please try again later."}), http_status
+
+
+
 @chat_bp.route('/chat', methods=['POST'])
 def chat_api():
+    # Validate Request
+    chat_validation_response = chat_api_validate(request)
+    if not chat_validation_response.is_valid:
+        return APIResponse(chat_validation_response).response(HTTPStatus.BAD_REQUEST)
+    
+     # Get response from LLM
     data = request.get_json()
     input = data.get('input', '')
     session_id = data.get('session_id')
-    request_type = data.get('request_type')
-    address = get_request_address()
-    # Input Validation
-
-    result = validate_input(input, request_type, address)
-
-    if not result["is_valid"]:
-        return jsonify({'success': False, 'error': result["message"]}), HTTPStatus.BAD_REQUEST
-    request_type = result["data"]["request_type"]
-    domain = result["data"]["domain"]
-
-    # Get response from LLM
+    request_type = chat_validation_response.data["request_type"]
+    domain = chat_validation_response.data["domain"]
     try:
         bot_response = get_groq_response(input.strip(), session_id, request_type, domain)
-        return jsonify({'success': True, 'response': bot_response})
+        return APIResponse(None,bot_response).response(HTTPStatus.OK)
     except Exception as e:
         print(f"Error during LLM call: {e}")
         err = traceback.format_exc()
         print(err)
-        return jsonify({
-            'success': False,
-            'error': "Sorry, something went wrong while processing your message. Please try again later."}), HTTPStatus.INTERNAL_SERVER_ERROR
+        return APIResponse().response(HTTPStatus.INTERNAL_SERVER_ERROR)
+
 
 @chat_bp.route('/chat-info', methods=['PATCH'])
 def patch_updates():
@@ -103,3 +121,4 @@ def get_request_address():
     if origin:
         return urlparse(origin).netloc
     return None
+

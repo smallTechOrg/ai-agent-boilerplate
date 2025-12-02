@@ -11,3 +11,5 @@ code/test/test_report.html
 .env
 # For autoenv
 .envrc
+# For macOS
+.DS_Store

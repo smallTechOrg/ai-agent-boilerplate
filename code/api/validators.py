@@ -1,7 +1,49 @@
 from http import HTTPStatus
+from urllib.parse import urlparse
 from config import max_input_length, agent_type , status_type
 import uuid
 from db import sync_connection
+
+class ValidationResponse:
+    def __init__(self, is_valid, message, data=None):
+        self.is_valid = is_valid 
+        self.message = message
+        self.data = data
+
+    def is_valid(self):
+        return self.is_valid
+
+def chat_api_validate(request) -> ValidationResponse:
+    data = request.get_json()
+    input = data.get('input', '')
+    request_type = data.get('request_type')
+    address = get_request_address2(request)
+
+    """Validates the chat user input. Returns (is_valid, message, address)."""
+    result = None
+    result = validate_chat_user_input(input)
+    if not result.is_valid:
+        return result
+    
+    try:
+        request_type = agent_type(request_type.strip().lower()).value
+    except (ValueError, AttributeError):
+        request_type = agent_type.GENERIC.value  # <-- fallback string
+
+    address_validation_response = validate_address2(address)
+    if not address_validation_response.is_valid:
+        return address_validation_response 
+    
+    return ValidationResponse(True, "", {"request_type":request_type, "domain":address_validation_response.data})
+
+def validate_chat_user_input(input) -> ValidationResponse:
+    input = input.strip()
+    if not input:
+        return ValidationResponse(False,"Please enter a message before sending.")
+    if len(input) > max_input_length:
+        return ValidationResponse(False, "Your message is too long. Please limit to {max_input_length} characters.")
+    return ValidationResponse(True, "")
+
 
 def validate_input(input, request_type, address):
     """Validates the chat user input. Returns (is_valid, message, address)."""
@@ -75,3 +117,23 @@ def validate_address(address):
             return False, "Incorrect Address"
         
         return True, row[0]
+    
+def validate_address2(address):
+    """Checks whether the given address exists. Returns (is_valid, domain or message)."""
+    sync_connection.rollback()
+    
+    with sync_connection.cursor() as cur:
+        cur.execute("SELECT key FROM domains WHERE address = %s;", (address,))
+        row = cur.fetchone()
+
+        if not row:
+            return ValidationResponse(False, "Incorrect Address")
+        
+        return ValidationResponse(True, "",row[0])
+    
+
+def get_request_address2(request):
+    origin = request.headers.get("Origin")
+    if origin:
+        return urlparse(origin).netloc
+    return None

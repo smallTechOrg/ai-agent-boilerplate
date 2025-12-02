@@ -1,17 +1,9 @@
 from http import HTTPStatus
 from urllib.parse import urlparse
+from api.models import ValidationResponse
 from config import max_input_length, agent_type , status_type
 import uuid
 from db import sync_connection
-
-class ValidationResponse:
-    def __init__(self, is_valid, message, data=None):
-        self.is_valid = is_valid 
-        self.message = message
-        self.data = data
-
-    def is_valid(self):
-        return self.is_valid
 
 def chat_api_validate(request) -> ValidationResponse:
     data = request.get_json()
@@ -35,6 +27,20 @@ def chat_api_validate(request) -> ValidationResponse:
         return address_validation_response 
     
     return ValidationResponse(True, "", {"request_type":request_type, "domain":address_validation_response.data})
+
+
+def validate_history_data(request):
+    session_id = request.args.get("session_id")
+    result = validate_session_id(session_id)
+    if not result["is_valid"]:
+        return ValidationResponse(False, result["message"])
+    
+    address = get_request_address2(request)
+    valid_address, domain  = validate_address(address)
+    if not valid_address:
+        return ValidationResponse(False, "Incorrect Address")
+    return ValidationResponse(True, None, {"domain": domain})
+    
 
 def validate_chat_user_input(input) -> ValidationResponse:
     input = input.strip()
@@ -90,21 +96,18 @@ def validate_session_id(session_id):
         print(f"[Error] {e}")
         return {"is_valid":False, "message":"Internal Server Error", "status":HTTPStatus.INTERNAL_SERVER_ERROR}
     
+
 def validate_update_data(update_data, session_id, status, is_active):
     """Validate status and remarks """
-    try:
-        if not update_data or not session_id:
-            return {"is_valid":False, "message":"session_id/data is required", "status":HTTPStatus.BAD_REQUEST}
-        if status and status not in status_type.__members__ and status not in [s.value for s in status_type]:
-            return {"is_valid":False, "message":"Status not allowed", "status":HTTPStatus.BAD_REQUEST}
-        if is_active and not isinstance(is_active, bool):
-            return {"is_valid":False, "message":"Invalid input", "status":HTTPStatus.BAD_REQUEST}
-        return {"is_valid":True, "message":"Valid session_id", "status":HTTPStatus.OK}
+    if not update_data or not session_id:
+        return ValidationResponse(False,"session_id/data is required")
+    if status and status not in status_type.__members__ and status not in [s.value for s in status_type]:
+        return ValidationResponse(False,"Status not allowed")
+    if is_active and not isinstance(is_active, bool):
+        return ValidationResponse(False,"Invalid input")
+    return ValidationResponse(True, "")
 
-    except Exception as e:
-        print(f"[Error] {e}")
-        return {"is_valid":False, "message":"Internal Server Error", "status":HTTPStatus.INTERNAL_SERVER_ERROR}
-    
+
 def validate_address(address):
     """Checks whether the given address exists. Returns (is_valid, domain or message)."""
     sync_connection.rollback()

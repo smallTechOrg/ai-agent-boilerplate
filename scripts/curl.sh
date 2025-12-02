@@ -50,6 +50,57 @@ curl -X 'POST' \
 
 # history
 curl -X 'GET' \
-  'http://127.0.0.1:5000/history?session_id=3a4cf7e1-5b30-46df-b018-85ca4dbd4591' \
+  'http://127.0.0.1:5000/history?session_id=4a4cf7e1-5b30-46df-b018-85ca4dbd4591' \
   -H 'accept: application/json' \
   -H 'Origin: https://example.com'
+
+  curl -X 'GET' \
+  'http://127.0.0.1:5000/history?session_id=4a4cf7e1-5b30-46df-b018-85ca4dbd459' \
+  -H 'accept: application/json' \
+  -H 'Origin: https://example.com'
+
+
+
+
+  # chat info
+  curl -X 'GET' \
+  'http://127.0.0.1:5000/chat-info' \
+  -H 'accept: application/json'
+
+
+  curl -X 'PATCH' \
+  'http://127.0.0.1:5000/chat-info' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "session_id": "0b3cf7e1-5b30-46df-b018-85ca4dbd4391",
+  "status": "CLOSED"
+}'
+
+
+
+# happy chat info pathc
+
+curl -X 'PATCH' \
+  'http://127.0.0.1:5000/chat-info' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "session_id": "0b3cf7e1-5b30-46df-b018-85ca4dbd4391",
+  "status": "CLOSED",
+  "remarks": "no",
+  "is_active": true
+}'
+
+
+
+curl -X 'PATCH' \
+  'http://127.0.0.1:5000/chat-info' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "session_id": "0b3cf7e1-5b30-46df-b018-85ca4dbd4391",
+  "status": "CLOSED",
+  "remarks": "no",
+  "is_active": "asda"
+}'

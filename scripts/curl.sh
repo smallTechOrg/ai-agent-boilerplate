@@ -32,7 +32,7 @@ curl -w "HTTP Code: %{http_code}\n" -X 'POST' \
   -d '{
   "input": "how are you",
   "session_id": "0b3cf7e1-5b30-46df-b018-85ca4dbd4391",
-  "request_type": "salesx"
+  "request_type": "SALES"
 }'
 
 
@@ -88,7 +88,7 @@ curl -X 'PATCH' \
   -d '{
   "session_id": "0b3cf7e1-5b30-46df-b018-85ca4dbd4391",
   "status": "CLOSED",
-  "remarks": "no",
+  "remarks": "yes bro",
   "is_active": true
 }'
 

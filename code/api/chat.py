@@ -40,14 +40,14 @@ def chat_api():
 @chat_bp.route('/chat-info', methods=['PATCH'])
 def patch_updates():
     try:
-        update_data = request.get_json()
-        session_id = update_data.get("session_id")
-        status = update_data.get("status")
-        remarks = update_data.get("remarks")
-        is_active = update_data.get("is_active")
-        chat_info_validation_response = validate_update_data(update_data, session_id, status,is_active)
+        chat_info_validation_response = validate_update_data(request)
         if not chat_info_validation_response.is_valid:
             return APIResponse(chat_info_validation_response).response(HTTPStatus.BAD_REQUEST)
+        data = request.get_json()
+        session_id = data.get("session_id")
+        status = data.get("status")
+        remarks = data.get("remarks")
+        is_active = data.get("is_active")
         update_chat_info(session_id, status, remarks, is_active)
         return APIResponse(None,{'message': "chat-info updated"}).response(HTTPStatus.OK)
     except Exception as e:

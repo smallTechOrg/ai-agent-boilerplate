@@ -43,7 +43,7 @@ def hello():
 @app.route("/history", methods=["GET"])
 def history_endpoint():
     session_id = request.args.get("session_id")
-    address = get_request_address()
+    address = get_request_address(request)
 
     # Validate
     result = validate_session_id(session_id)
@@ -104,7 +104,7 @@ def chat_api():
     input = data.get('input', '')
     session_id = data.get('session_id')
     request_type = data.get('request_type')
-    address = get_request_address()
+    address = get_request_address(request)
     # Input Validation
 
     result = validate_input(input, request_type, address)
@@ -126,7 +126,7 @@ def chat_api():
             'success': False,
             'error': "Sorry, something went wrong while processing your message. Please try again later."}), HTTPStatus.INTERNAL_SERVER_ERROR
 
-def get_request_address():
+def get_request_address(request):
     data = request.get_json(silent=True) or {}
     origin = data.get("host") 
     if not origin or not str(origin).strip():

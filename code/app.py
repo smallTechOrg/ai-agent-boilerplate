@@ -127,7 +127,7 @@ def chat_api():
             'error': "Sorry, something went wrong while processing your message. Please try again later."}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 def get_request_address(request):
-    origin = request.args.get("host")
+    origin = request.args.get("origin")
     if not origin or not str(origin).strip():
         origin = request.headers.get("Origin")
     if origin:

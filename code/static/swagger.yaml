@@ -48,6 +48,7 @@ paths:
             schema:
               type: object
               required:
+                - session_id
                 - input
               properties:
                 input:
@@ -63,6 +64,11 @@ paths:
                   type: string
                   description: The type of the query/agent required
                   example: "sales"
+                host:
+                  type: string
+                  description: website from which request in coming
+                  example: "example.com"
+                
       responses:
         "200":
           description: Successful response from the chatbot
@@ -117,14 +123,33 @@ paths:
       description: >
         Returns the chat history for the given `session_id`.  
         If the session does not exist, a new one is created and initialized with the first AI message.
-      parameters:
-        - name: session_id
-          in: query
-          required: true
-          schema:
-            type: string
-            format: UUID
-          description: Unique session identifier    
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_id
+              properties:
+                session_id:
+                  type: string
+                  format: UUID
+                  description: Unique session identifier of the lead
+                  example: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
+                host:
+                  type: string
+                  description: website from which request in coming
+            examples:
+              withHost:
+                summary: contains both host and session id
+                value:
+                  session_id: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
+                  host: "example.com"
+              withoutHost:
+                summary: No need to send host explictly, and host is taken from request header
+                value:
+                  session_id: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
       responses:
         '200':
           description: Chat history retrieved successfully

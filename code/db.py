@@ -120,6 +120,23 @@ def ensure_prompts_table_exists(sync_connection):
             );
             """
             cur.execute(create_table_sql)
+            
+            # Add unique constraint if it doesn't exist (for existing databases)
+            alter_table_sql = """
+            DO $$ 
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint 
+                    WHERE conname = 'prompts_domain_agent_type_type_key'
+                ) THEN
+                    ALTER TABLE prompts 
+                    ADD CONSTRAINT prompts_domain_agent_type_type_key 
+                    UNIQUE (domain, agent_type, type);
+                END IF;
+            END $$;
+            """
+            cur.execute(alter_table_sql)
+            
             sync_connection.commit()
             print("Table 'prompts' created/verified successfully.")
     except Exception as e:

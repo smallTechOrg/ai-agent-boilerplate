@@ -6,6 +6,7 @@ from validators import validate_input, validate_session_id, validate_update_data
 from config import DEBUG
 from flask_cors import CORS 
 from flask_swagger_ui import get_swaggerui_blueprint
+from prompts_table import get_all_prompts, upsert_prompt
 from history import get_history
 from leads import get_all_chat_info
 from leads_update import update_chat_info
@@ -125,6 +126,33 @@ def chat_api():
         return jsonify({
             'success': False,
             'error': "Sorry, something went wrong while processing your message. Please try again later."}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+# --- New Prompt APIs ---
+@app.route('/prompts', methods=['GET'])
+def get_prompts():
+    from db import sync_connection
+    prompts = get_all_prompts(sync_connection)
+    return jsonify({"prompts": prompts}), 200
+
+@app.route('/prompt', methods=['POST'])
+def create_or_update_prompt():
+    from db import sync_connection
+    data = request.get_json()
+    domain = data.get('domain')
+    agent_type = data.get('agent_type')
+    prompt_type = data.get('type')
+    text = data.get('text')
+    if not all([domain, agent_type, prompt_type, text]):
+        return jsonify({"success": False, "error": "Missing required fields: domain, agent_type, type, text"}), 400
+    success = upsert_prompt(sync_connection, domain, agent_type, prompt_type, text)
+    if success:
+        return jsonify({"success": True, "message": "Prompt created/updated."}), 200
+    else:
+        return jsonify({"success": False, "error": "Failed to create/update prompt."}), 500
+
+
+
 
 def get_request_address(request):
     origin = request.args.get("origin")

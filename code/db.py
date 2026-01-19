@@ -115,7 +115,8 @@ def ensure_prompts_table_exists(sync_connection):
                 agent_type TEXT NOT NULL,
                 type TEXT NOT NULL,
                 "text" TEXT,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (domain, agent_type, type)
             );
             """
             cur.execute(create_table_sql)

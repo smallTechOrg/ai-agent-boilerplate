@@ -87,12 +87,13 @@ def check_and_insert_default_domains(sync_connection):
         sync_connection.commit()
 
 # --- New prompt API helpers ---
-def get_all_prompts(sync_connection):
+def get_all_prompts():
     """
     Fetch all prompts from the prompts table.
     Returns a list of dicts.
     """
     try:
+        from db import sync_connection
         with sync_connection.cursor() as cur:
             cur.execute("SELECT id, domain, agent_type, type, text, created_at FROM prompts;")
             rows = cur.fetchall()
@@ -102,12 +103,13 @@ def get_all_prompts(sync_connection):
         print(f"Error fetching prompts: {e}")
         return []
 
-def upsert_prompt(sync_connection, domain, agent_type, prompt_type, text):
+def upsert_prompt(domain, agent_type, prompt_type, text):
     """
     Insert or update a prompt based on (domain, agent_type, type).
     Returns True if successful, False otherwise.
     """
     try:
+        from db import sync_connection
         with sync_connection.cursor() as cur:
             cur.execute(
                 """

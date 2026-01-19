@@ -131,13 +131,11 @@ def chat_api():
 # --- New Prompt APIs ---
 @app.route('/prompts', methods=['GET'])
 def get_prompts():
-    from db import sync_connection
-    prompts = get_all_prompts(sync_connection)
+    prompts = get_all_prompts()
     return jsonify({"prompts": prompts}), 200
 
 @app.route('/prompt', methods=['POST'])
 def create_or_update_prompt():
-    from db import sync_connection
     data = request.get_json()
     domain = data.get('domain')
     agent_type = data.get('agent_type')
@@ -145,7 +143,7 @@ def create_or_update_prompt():
     text = data.get('text')
     if not all([domain, agent_type, prompt_type, text]):
         return jsonify({"success": False, "error": "Missing required fields: domain, agent_type, type, text"}), 400
-    success = upsert_prompt(sync_connection, domain, agent_type, prompt_type, text)
+    success = upsert_prompt(domain, agent_type, prompt_type, text)
     if success:
         return jsonify({"success": True, "message": "Prompt created/updated."}), 200
     else:

@@ -9,7 +9,7 @@ class TestHistoryAPI:
         """Test 1: Ensure /history returns correct data for a valid session ID. new sessions return 201 and existing ones return 200."""
         session_id = str(uuid.uuid4())
         # First request with session id (201)
-        response = client.get('/history', query_string={'session_id': session_id})
+        response = client.get('/history', query_string={'session_id': session_id}, headers={'Origin': 'http://example.com'})
         assert response.status_code == HTTPStatus.CREATED
         data = response.get_json()
         assert "session_id" in data 
@@ -18,7 +18,7 @@ class TestHistoryAPI:
         assert len(data["history"]) >= 1, "A new session should have a welcome message."
 
         # second request with same session ID
-        response2 = client.get('/history', query_string={'session_id': session_id})
+        response2 = client.get('/history', query_string={'session_id': session_id}, headers={'Origin': 'http://example.com'})
         assert response2.status_code == HTTPStatus.OK
 
 

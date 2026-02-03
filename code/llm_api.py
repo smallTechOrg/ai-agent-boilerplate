@@ -20,7 +20,7 @@ def get_groq_response(input_text, session_id, request_type, domain):
     
     # Rest of your existing code...
     prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
+        ("system", "{system}"),
         MessagesPlaceholder(variable_name="history"),
         ("human", "{input}")
     ])
@@ -54,7 +54,8 @@ def get_groq_response(input_text, session_id, request_type, domain):
     
     # Get response with history
     response = chain_with_history.invoke(
-        {"input": input_text},
+        {"input": input_text,
+        "system": system_prompt},
         config=config
     )
 

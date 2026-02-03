@@ -67,7 +67,7 @@ def validate_session_id(request):
         if session_id is None:
             return ValidationResponse(False, "session_id is required")
         if not is_valid_uuid(session_id):
-            return ValidationResponse(False, "invalid session id format")
+            return ValidationResponse(False, "Invalid session id format")
         return ValidationResponse(True)
 
     except Exception as e:
@@ -91,7 +91,9 @@ def validate_address(request):
     
 
 def get_request_address(request):
-    origin = request.headers.get("Origin")
+    origin = request.args.get("origin")
+    if not origin or not str(origin).strip():
+        origin = request.headers.get("Origin")
     if origin:
         return urlparse(origin).netloc
     return None

@@ -48,6 +48,7 @@ paths:
             schema:
               type: object
               required:
+                - session_id
                 - input
               properties:
                 input:
@@ -63,6 +64,11 @@ paths:
                   type: string
                   description: The type of the query/agent required
                   example: "sales"
+                host:
+                  type: string
+                  description: website from which request in coming
+                  example: "example.com"
+                
       responses:
         "200":
           description: Successful response from the chatbot
@@ -111,20 +117,137 @@ paths:
                   error:
                     type: string
                     example: "Sorry, something went wrong while processing your message. Please try again later."
+  /prompts:
+    get:
+      summary: Get all prompts
+      description: Returns all prompts from the prompts table.
+      responses:
+        "200":
+          description: List of all prompts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prompts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        domain:
+                          type: string
+                        agent_type:
+                          type: string
+                        type:
+                          type: string
+                        text:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+  /prompt:
+    post:
+      summary: Create or update a prompt
+      description: Create a new prompt or update an existing one by (domain, agent_type, type).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domain
+                - agent_type
+                - type
+                - text
+              properties:
+                domain:
+                  type: string
+                  example: "common"
+                agent_type:
+                  type: string
+                  example: "sales"
+                type:
+                  type: string
+                  example: "intro-message"
+                text:
+                  type: string
+                  example: "Welcome to our service!"
+      responses:
+        "200":
+          description: Prompt created or updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Prompt created/updated."
+        "400":
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Missing required fields: domain, agent_type, type, text"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Failed to create/update prompt."
   /history:
     get:
       summary: Get or create chat history
       description: >
         Returns the chat history for the given `session_id`.  
         If the session does not exist, a new one is created and initialized with the first AI message.
-      parameters:
-        - name: session_id
-          in: query
-          required: true
-          schema:
-            type: string
-            format: UUID
-          description: Unique session identifier    
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_id
+              properties:
+                session_id:
+                  type: string
+                  format: UUID
+                  description: Unique session identifier of the lead
+                  example: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
+                host:
+                  type: string
+                  description: website from which request in coming
+            examples:
+              withHost:
+                summary: contains both host and session id
+                value:
+                  session_id: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
+                  host: "example.com"
+              withoutHost:
+                summary: No need to send host explictly, and host is taken from request header
+                value:
+                  session_id: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
       responses:
         '200':
           description: Chat history retrieved successfully
@@ -234,6 +357,17 @@ paths:
                           type: string
                           description: Analyst's remark for that session id
                           example: "Send a mail and waiting for a review"
+
+                        doamin:
+                          type: string
+                          description: request frontend's Domain
+                          example: "SMALLTECH"
+
+                        time:
+                          type: string
+                          description: Date and time when contact info is detected
+                          example: "2025-12-01 12:38:54.331648+05:30"
+
         "500":
           description: Server error while fetching chat info
           content:

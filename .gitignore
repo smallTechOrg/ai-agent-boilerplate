@@ -9,5 +9,7 @@ venv/
 # Pytest cache
 .pytest_cache/
 .env
-# MacOS files
+# For autoenv
+.envrc
+# For macOS
 .DS_Store

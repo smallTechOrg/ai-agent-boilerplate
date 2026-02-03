@@ -1,0 +1,77 @@
+
+from http import HTTPStatus
+import traceback
+from urllib.parse import urlparse
+from flask import Blueprint, jsonify, request
+from api.models import APIResponse
+from history import get_history
+from leads import get_all_chat_info
+from leads_update import update_chat_info
+from llm_api import get_groq_response
+from api.validators import validate_address, validate_history_data, validate_session_id, validate_update_data, chat_api_validate
+
+chat_bp = Blueprint("chat", __name__)
+
+#Rendering response
+# chat_api is a Flask route function defined that acts as the backend API endpoint for chat exchanges. It is the API endpoint your frontend calls to send user messages and receive chatbot responses.
+# It receives a JSON request containing the user's chat input from the frontend, validates the input, sends the validated input to the LLM, and returns a JSON response.
+@chat_bp.route('/chat', methods=['POST'])
+def chat_api():
+    # Validate Request
+    chat_validation_response = chat_api_validate(request)
+    if not chat_validation_response.is_valid:
+        return APIResponse(chat_validation_response).response(HTTPStatus.BAD_REQUEST)
+    
+     # Get response from LLM
+    data = request.get_json()
+    input = data.get('input', '')
+    session_id = data.get('session_id')
+    request_type = chat_validation_response.data["request_type"]
+    domain = chat_validation_response.data["domain"]
+    try:
+        bot_response = get_groq_response(input.strip(), session_id, request_type, domain)
+        return APIResponse(None,{'response': bot_response}).response(HTTPStatus.OK)
+    except Exception as e:
+        print(f"Error during LLM call: {e}")
+        print(traceback.format_exc())
+        return APIResponse().response(HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+@chat_bp.route('/chat-info', methods=['PATCH'])
+def patch_updates():
+    try:
+        chat_info_validation_response = validate_update_data(request)
+        if not chat_info_validation_response.is_valid:
+            return APIResponse(chat_info_validation_response).response(HTTPStatus.BAD_REQUEST)
+        data = request.get_json()
+        session_id = data.get("session_id")
+        status = data.get("status")
+        remarks = data.get("remarks")
+        is_active = data.get("is_active")
+        update_chat_info(session_id, status, remarks, is_active)
+        return APIResponse(None,{'message': "chat-info updated"}).response(HTTPStatus.OK)
+    except Exception as e:
+        print(traceback.format_exc())
+        return APIResponse().response(HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+@chat_bp.route('/chat-info', methods=['GET'])
+def get_chat_info():
+    try:
+        leads_data, status = get_all_chat_info()
+        return APIResponse(None,{'leads': leads_data}).response(HTTPStatus.OK)
+    except Exception as e:
+        print(f"Error in get_leads endpoint: {e}")
+        print(traceback.format_exc())
+        return APIResponse().response(HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+# History API to load previous messages while loading the page
+@chat_bp.route("/history", methods=["GET"])
+def history_endpoint():
+    history_validation_response = validate_history_data(request)
+    if not history_validation_response.is_valid:
+        return APIResponse(history_validation_response).response(HTTPStatus.BAD_REQUEST)
+    session_id = request.args.get("session_id")
+    history_data, status = get_history(session_id, history_validation_response.data["domain"])
+    return jsonify(history_data), status

@@ -116,13 +116,29 @@ pip install -r requirements.txt
 
 ## Run Flask to render frontend
 
+### Setup Env
+
+Cope `.env.example` into `.env` (gitignored).
+```
+cp .env.example .env
+```
+
+Replace the values (get it from team members?)
+```
+GROQ_API_KEY=randomstring
+DATABASE_URL=postgresql://username:password@localhost:5432/
+```
+
+
+### Run
+
 If virtual environment is activated and dependencies are installed then run chatbot by:
 
 ```bash
 cd code
 python app.py
 ```
-Now visit http://127.0.0.1:5000 in your browser.
+Now visit http://127.0.0.1:5000/ in your browser.
 
 ## Test Flask APIs 
 
@@ -131,4 +147,12 @@ If flask is rendered successfully, then test APIs by:
 ```bash
 cd code/test
 pytest --html=test_report.html --self-contained-html -v
+```
+
+
+## For Linting
+
+Using ruff (example inside `code/`)
+```
+ruff check app.py --fix
 ```

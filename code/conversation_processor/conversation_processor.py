@@ -101,10 +101,12 @@ def _detect_info_with_llm(message, request_type, domain):
 
         # prompt based on request type
         if request_type == agent_type.SALES:
-            prompt_content = get_prompt(domain, request_type, "fetch-contact-info").format(message=message)
+            prompt_content = get_prompt(domain, request_type, "fetch-contact-info")
+            prompt_content = prompt_content.replace("{message}", message)
         else:
-            prompt_content = get_prompt(domain, request_type,"fetch-name").format(message=message)
-
+            prompt_content = get_prompt(domain, request_type,"fetch-name")
+            prompt_content = prompt_content.replace("{message}", message)
+        print(f"[INFO_DETECTION] Using prompt: {prompt_content}")   
         # Create the prompt
         full_prompt = [SystemMessage(content=prompt_content)]
 

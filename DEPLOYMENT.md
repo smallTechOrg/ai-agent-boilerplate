@@ -172,5 +172,14 @@ curl http://localhost:5000/health
 gcloud compute ssh <VM_INSTANCE_NAME> --zone=<ZONE>
 ```
 
+## Storage cleaning
+
+```bash
+# Clean cache
+sudo apt clean
+
+# Clear logs
+sudo journalctl --vacuum-size=200M
+```
 ---
-*Last Updated: January 2026*
+*Last Updated: Feb 2026*

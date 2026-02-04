@@ -7,36 +7,27 @@ from config import DEFAULT_DOMAIN, agent_type
 
 def get_prompt(domain, agent_type, prompt_type):
     # Load both prompts from DB
-    if prompt_type == "system":
+    if prompt_type == "system" and agent_type == "sales":
 
-        if agent_type == "sales":
-            common_data = load_prompt_from_db(domain, agent_type, "base-prompt")
-            # if common_data is None:
-            #     # Use default or find parent.
-            #     common_data = load_prompt_from_db(DEFAULT_DOMAIN, agent_type, "base-prompt")
-            company_data = load_prompt_from_db(domain, agent_type, "company")    
-            # if company_data is None:
-            #     company_data = load_prompt_from_db(DEFAULT_DOMAIN, agent_type, "company") 
-                
-            # Extract "system" arrays safely
-            common_parts = common_data["system"] if isinstance(common_data, dict) and "system" in common_data else [common_data]
-            company_parts = company_data["system"] if isinstance(company_data, dict) and "system" in company_data else [company_data]
+        common_prompt= load_prompt_from_db(domain, agent_type, "base-prompt")
+        # if common_data is None:
+        #     # Use default or find parent.
+        #     common_data = load_prompt_from_db(DEFAULT_DOMAIN, agent_type, "base-prompt")
+        company_prompt = load_prompt_from_db(domain, agent_type, "company")    
+        # if company_data is None:
+        #     company_data = load_prompt_from_db(DEFAULT_DOMAIN, agent_type, "company") 
+            
+        parts = []
+        if common_prompt:
+            parts.append(common_prompt)
+        if company_prompt:
+            parts.append(company_prompt)
 
-            # Merge arrays
-            merged_parts = common_parts + company_parts
+        # Join them into one prompt string
+        return "\n\n".join(parts)
 
-            # Join them into one prompt string
-            return "\n".join(merged_parts)
-        else:
-            data =  load_prompt_from_db(domain, agent_type, prompt_type)
-            if isinstance(data, dict) and "system" in data:
-                return "\n".join(data["system"])
-            return data["system"]
-    else:
-        data =  load_prompt_from_db(domain, agent_type, prompt_type)
-        if isinstance(data, dict) and "system" in data:
-            return "\n".join(data["system"])
-        return data["system"]
+    prompt =  load_prompt_from_db(domain, agent_type, prompt_type)
+    return prompt or ""
 
 
 
@@ -55,14 +46,7 @@ def load_prompt_from_db(domain: str, agent_type: str, prompt_type: str):
                 print(f"Prompt not found in DB for parent Domain: {domain}/{agent_type}/{prompt_type}")
                 return None
 
-        text = row[0]
-
-        # Try to parse JSON if stored as JSON string
-        try:
-            parsed = json.loads(text)
-            return parsed
-        except json.JSONDecodeError:
-            return text  # raw string
+        return row[0]
 
     except Exception as e:
         raise RuntimeError(f"Failed to load prompt from DB: {e}")

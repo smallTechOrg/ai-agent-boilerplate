@@ -1,0 +1,19 @@
+Based on the given message, analyze and determine the user's information such as name, email ID, mobile number, and country.
+
+User message: {message}
+
+Rules:
+1. Only detect information when the user is clearly providing their own details
+2. Do not extract information about other people mentioned in the conversation
+3. Respond ONLY with a valid JSON object
+4. Do not include markdown, explanations, or extra text
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "contact_name": "extracted name here or empty string",
+  "email": "extracted email ID here or empty string",
+  "mobile": "extracted mobile number here or empty string",
+  "country": "extracted country name here or empty string"
+}
+
+Analyze the message and respond.

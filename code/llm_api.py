@@ -1,10 +1,7 @@
-import os
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from langchain_groq import ChatGroq
-from config import GROQ_API_KEY, GROQ_MODEL_NAME, table_name, agent_type
+from config import GROQ_API_KEY, GROQ_MODEL_NAME, agent_type
 from system_prompt import get_prompt
-from db import sync_connection
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from conversation_processor.conversation_processor import process_conversation
@@ -54,8 +51,10 @@ def get_groq_response(input_text, session_id, request_type, domain):
     
     # Get response with history
     response = chain_with_history.invoke(
-        {"input": input_text,
-        "system": system_prompt},
+        {
+            "input": input_text,
+            "system": system_prompt
+        },
         config=config
     )
 

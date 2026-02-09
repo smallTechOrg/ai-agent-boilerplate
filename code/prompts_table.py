@@ -30,12 +30,12 @@ def check_and_insert_default_prompts(sync_connection):
                 print("Prompts table is empty. Inserting default prompts...")
 
                 default_prompts = [
-                    (DEFAULT_DOMAIN, 'generic', 'fetch-name', Path("prompts/name_prompt.json")),
-                    (DEFAULT_DOMAIN, 'sales', 'fetch-contact-info',  Path("prompts/info_prompt.json")),
-                    (DEFAULT_DOMAIN, 'sales', 'base-prompt', Path("prompts/sales_prompt.json")),
-                    (DEFAULT_DOMAIN, 'sales', 'company', Path("prompts/company.json")),
-                    (DEFAULT_DOMAIN, 'sales', 'intro-message', Path("prompts/intro_message.json")),
-                    (DEFAULT_DOMAIN, 'generic', 'system', Path("prompts/generic_prompt.json")),
+                    (DEFAULT_DOMAIN, 'generic', 'fetch-name', Path("prompts/name_prompt.txt")),
+                    (DEFAULT_DOMAIN, 'sales', 'fetch-contact-info',  Path("prompts/info_prompt.txt")),
+                    (DEFAULT_DOMAIN, 'sales', 'base-prompt', Path("prompts/sales_prompt.txt")),
+                    (DEFAULT_DOMAIN, 'sales', 'company', Path("prompts/company.txt")),
+                    (DEFAULT_DOMAIN, 'sales', 'intro-message', Path("prompts/intro_message.txt")),
+                    (DEFAULT_DOMAIN, 'generic', 'system', Path("prompts/generic_prompt.txt")),
                 ]
 
                 for domain, agent_type, prompt_type, text in default_prompts:

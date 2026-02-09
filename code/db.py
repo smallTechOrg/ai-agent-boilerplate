@@ -6,6 +6,59 @@ from config import DATABASE_URL, db_name, table_name
 from prompts_table import check_and_insert_default_prompts
 
 
+class AutoReconnectConnection:
+    """
+    Wrapper around psycopg connection that automatically reconnects if the connection is lost.
+    """
+    def __init__(self, database_url):
+        self.database_url = database_url
+        self._conn = None
+        self._connect()
+    
+    def _connect(self):
+        """Create or recreate the connection."""
+        if self._conn is not None:
+            try:
+                self._conn.close()
+            except:
+                pass
+        self._conn = psycopg.connect(self.database_url)
+        self._conn.autocommit = False
+        print("Database connection established.")
+    
+    def _ensure_connected(self):
+        """Check if connection is alive, reconnect if not."""
+        try:
+            with self._conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        except (psycopg.OperationalError, psycopg.InterfaceError):
+            print("Connection lost, attempting to reconnect...")
+            self._connect()
+    
+    def cursor(self, *args, **kwargs):
+        """Return a cursor, reconnecting if necessary."""
+        self._ensure_connected()
+        return self._conn.cursor(*args, **kwargs)
+    
+    def commit(self):
+        """Commit transaction."""
+        self._ensure_connected()
+        self._conn.commit()
+    
+    def rollback(self):
+        """Rollback transaction."""
+        self._ensure_connected()
+        self._conn.rollback()
+    
+    @property
+    def autocommit(self):
+        return self._conn.autocommit
+    
+    @autocommit.setter
+    def autocommit(self, value):
+        self._conn.autocommit = value
+
+
 def ensure_database_exists(DATABASE_URL, db_name):
     """
     Connect to the 'postgres' system database. Create db_name if not exists.
@@ -29,11 +82,9 @@ def ensure_database_exists(DATABASE_URL, db_name):
 
 def create_sync_connection(DATABASE_URL):
     """
-    Establish a connection to the specified database.
+    Establish a connection to the specified database with auto-reconnect capability.
     """
-    conn = psycopg.connect(DATABASE_URL)
-    conn.autocommit = False
-    return conn
+    return AutoReconnectConnection(DATABASE_URL)
 
 def ensure_chat_table_exists(sync_connection, table_name):
     """

@@ -4,8 +4,8 @@ info:
   description: API specification for the Chat backend
   version: 1.0.0
 servers:
-  - url: https://api.smalltech.in
-    description: Production server running on Google Cloud Platform (GCP)
+  - url: https://staging.api.smalltech.in
+    description: Staging server running on Google Cloud Platform (GCP)
 
 components:
   schemas:

@@ -9,6 +9,38 @@ servers:
 
 components:
   schemas:
+    Domain:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Auto-assigned primary key.
+          example: 42
+        key:
+          type: string
+          description: Domain key, auto-generated from the hostname.
+          example: "EXAMPLE_COM"
+        address:
+          type: string
+          description: Canonical hostname extracted from the submitted URL.
+          example: "example.com"
+        parent_id:
+          type: integer
+          nullable: true
+          description: "ID of the parent domain; null for root domains."
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp of when the domain was created.
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Human-readable error description.
+
     status:
       type: string
       description: >
@@ -490,3 +522,203 @@ paths:
                   error:
                     type: string
                     example: "Unable to update lead. Please try again later."
+
+  /domains/:
+    post:
+      summary: Register a new domain
+      description: >
+        Accepts a website address, extracts the canonical hostname (stripping
+        scheme, path, query-string and a leading `www.`), auto-generates the
+        domain key from the hostname, and registers the domain under the default
+        root parent automatically.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - website_url
+              properties:
+                website_url:
+                  type: string
+                  description: >
+                    Full or partial website address to register.
+                    The key and parent are handled automatically.
+                  example: "https://www.example.com/about"
+            examples:
+              bare:
+                summary: Just the URL
+                value:
+                  website_url: "https://www.example.com/about"
+              noScheme:
+                summary: URL without scheme
+                value:
+                  website_url: "acme.com"
+      responses:
+        "201":
+          description: Domain registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+        "409":
+          description: A domain with that address already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "A domain for 'example.com' already exists."
+        "422":
+          description: Request validation failed (missing field or invalid URL)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "website_url does not appear to contain a valid hostname."
+    get:
+      summary: List all registered domains
+      description: Returns an array of all domain records ordered by creation time (oldest first).
+      responses:
+        "200":
+          description: Array of domain records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Domain'
+
+  /domains/{domain_id}:
+    get:
+      summary: Retrieve a domain by ID
+      parameters:
+        - in: path
+          name: domain_id
+          required: true
+          schema:
+            type: integer
+          description: Primary key of the domain record
+          example: 1
+      responses:
+        "200":
+          description: Domain record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+        "404":
+          description: Domain not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Domain with id=999 not found."
+
+  /chat-info/contact:
+    patch:
+      summary: Update contact info for a session
+      description: >
+        Update the contact details (`name`, `email`, `mobile`, `country`) of a lead identified by its `session_id`.  
+        All contact fields are optional, but at least one must be provided.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_id
+              properties:
+                session_id:
+                  type: string
+                  format: UUID
+                  description: Unique session identifier of the lead
+                  example: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
+                name:
+                  type: string
+                  description: Full name of the contact
+                  example: "Jane Doe"
+                email:
+                  type: string
+                  format: email
+                  description: Email address of the contact
+                  example: "jane@example.com"
+                mobile:
+                  type: string
+                  description: Mobile phone number of the contact
+                  example: "+919876543210"
+                country:
+                  type: string
+                  description: Country of the contact
+                  example: "India"
+            examples:
+              updateNameOnly:
+                summary: Update only name
+                value:
+                  session_id: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
+                  name: "Jane Doe"
+              updateEmailOnly:
+                summary: Update only email
+                value:
+                  session_id: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
+                  email: "jane@example.com"
+              updateAll:
+                summary: Update all contact fields
+                value:
+                  session_id: "0b3cf7e1-5b30-46df-b018-85ca4dbd4391"
+                  name: "Jane Doe"
+                  email: "jane@example.com"
+                  mobile: "+919876543210"
+                  country: "India"
+      responses:
+        "200":
+          description: Contact info updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "contact info updated"
+        "400":
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    examples:
+                      missingFields:
+                        value: "At least one of name, email, mobile, or country is required"
+                      invalidEmail:
+                        value: "Invalid email address"
+                      invalidMobile:
+                        value: "Invalid mobile number"
+                      invalidSession:
+                        value: "Invalid session id format"
+        "500":
+          description: Server error while updating contact info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Sorry, something went wrong. Please try again later."

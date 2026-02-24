@@ -7,14 +7,20 @@ from config import agent_type, DEFAULT_DOMAIN
 
 def load_json(path: Path):
     """
-    Load and return JSON content as a string.
+    Load file content. If valid JSON, return as JSON string. Otherwise return as plain text.
     """
     try:
         with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return json.dumps(data)  # ensure DB stores valid JSON text
+            content = f.read()
+        # Try to parse as JSON; if it succeeds, return canonical JSON string
+        try:
+            data = json.loads(content)
+            return json.dumps(data)
+        except json.JSONDecodeError:
+            # Not JSON — return plain text as-is
+            return content.strip()
     except Exception as e:
-        print(f"Failed to load JSON file {path}: {e}")
+        print(f"Failed to load file {path}: {e}")
         return None
 
 def check_and_insert_default_prompts(sync_connection):

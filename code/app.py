@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_cors import CORS
 from flask_smorest import Api
 
@@ -38,6 +38,10 @@ def create_app() -> Flask:
 
 
 app = create_app()
+
+@app.route('/chat-ui')
+def chat_ui():
+    return render_template('chat.html')
 
 if __name__ == "__main__":
     app.run(debug=DEBUG, port=5001)

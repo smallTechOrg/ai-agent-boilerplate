@@ -1,7 +1,9 @@
 python-dotenv
-flask 
+flask
 flask-cors
-langchain 
+flask-smorest
+marshmallow
+langchain
 langchain-groq
 langchain-community
 langchain-postgres

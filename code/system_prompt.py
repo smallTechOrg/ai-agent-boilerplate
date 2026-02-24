@@ -4,6 +4,17 @@ from functools import lru_cache
 from db import sync_connection
 from config import DEFAULT_DOMAIN, agent_type
 
+FORMATTING_INSTRUCTION = """
+
+Formatting Rules:
+- Use markdown formatting in your responses for readability.
+- Use **bold** for key words, service names, or important phrases.
+- Use *italic* for subtle emphasis such as names or side notes.
+- Use line breaks to separate different points or sections.
+- Use bullet points or numbered lists when listing multiple items.
+- You may use headings (##, ###) when it improves clarity.
+"""
+
 
 def get_prompt(domain, agent_type, prompt_type):
     # Load both prompts from DB
@@ -23,8 +34,8 @@ def get_prompt(domain, agent_type, prompt_type):
         if company_prompt:
             parts.append(company_prompt)
 
-        # Join them into one prompt string
-        return "\n\n".join(parts)
+        # Join them into one prompt string and append formatting instructions
+        return "\n\n".join(parts) + FORMATTING_INSTRUCTION
 
     prompt =  load_prompt_from_db(domain, agent_type, prompt_type)
     return prompt or ""

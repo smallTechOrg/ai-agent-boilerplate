@@ -25,7 +25,6 @@ from domains import (
     DomainRepository,
     DomainService,
     InvalidWebsiteURLError,
-    ParentDomainNotFoundError,
 )
 from domains.schemas import CreateDomainRequest, DomainResponse
 
@@ -63,29 +62,26 @@ def _get_domain_service() -> DomainService:
 @domains_bp.response(HTTPStatus.CREATED, DomainResponse)
 @domains_bp.alt_response(HTTPStatus.CONFLICT, description="A domain with that address already exists.")
 @domains_bp.alt_response(HTTPStatus.UNPROCESSABLE_ENTITY, description="The website URL cannot be parsed into a valid hostname.")
-@domains_bp.alt_response(HTTPStatus.NOT_FOUND, description="The specified parent_id does not exist.")
 def create_domain(body: dict):
     """
     Register a new domain.
 
     Accepts a website address, extracts the canonical hostname (stripping
-    scheme, path, query-string and a leading ``www.``), auto-generates a domain
-    key unless one is explicitly supplied, and persists the record.
+    scheme, path, query-string and a leading ``www.``), and auto-generates
+    the domain key from the hostname. The domain is created under the default
+    root (parent_id=1) automatically.
     """
     service = _get_domain_service()
     try:
         domain = service.add_domain(
             website_url=body["website_url"],
-            key=body.get("key"),
-            parent_id=body.get("parent_id"),
+            parent_id=1,
         )
         return domain
     except DomainAlreadyExistsError as exc:
         abort(HTTPStatus.CONFLICT, message=str(exc))
     except InvalidWebsiteURLError as exc:
         abort(HTTPStatus.UNPROCESSABLE_ENTITY, message=str(exc))
-    except ParentDomainNotFoundError as exc:
-        abort(HTTPStatus.NOT_FOUND, message=str(exc))
 
 
 @domains_bp.get("/")

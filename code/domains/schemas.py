@@ -7,11 +7,16 @@ These schemas serve three purposes simultaneously:
   3. OpenAPI documentation – flask-smorest reflects the schema into the generated spec.
 """
 import re
-from marshmallow import Schema, fields, validates, ValidationError
+from marshmallow import Schema, fields, validates, ValidationError, EXCLUDE
 
 
 class CreateDomainRequest(Schema):
     """Request body for POST /domains/."""
+
+    class Meta:
+        # Silently drop any fields the client sends that are not declared here
+        # (e.g. legacy callers still sending 'key' or 'parent_id').
+        unknown = EXCLUDE
 
     website_url = fields.Str(
         required=True,
@@ -19,29 +24,10 @@ class CreateDomainRequest(Schema):
             "description": (
                 "Full or partial website address to register. "
                 "The canonical hostname is extracted automatically – scheme, path, "
-                "query-string and a leading 'www.' are all stripped."
+                "query-string and a leading 'www.' are all stripped. "
+                "The domain key is auto-generated from the hostname."
             ),
             "example": "https://www.example.com/about",
-        },
-    )
-    key = fields.Str(
-        load_default=None,
-        allow_none=True,
-        metadata={
-            "description": (
-                "Optional human-readable domain key (uppercase letters, digits and "
-                "underscores only, e.g. ACME_CORP). "
-                "Auto-generated from the extracted hostname when omitted."
-            ),
-            "example": "ACME_CORP",
-        },
-    )
-    parent_id = fields.Int(
-        load_default=None,
-        allow_none=True,
-        metadata={
-            "description": "Optional ID of an existing parent domain for hierarchical grouping.",
-            "example": 1,
         },
     )
 
@@ -57,15 +43,6 @@ class CreateDomainRequest(Schema):
         if "." not in host_part:
             raise ValidationError(
                 "website_url does not appear to contain a valid hostname."
-            )
-
-    @validates("key")
-    def validate_key(self, value: str) -> None:
-        if value is None:
-            return
-        if not re.match(r"^[A-Za-z0-9_]+$", value.strip()):
-            raise ValidationError(
-                "key may only contain letters, digits and underscores."
             )
 
 

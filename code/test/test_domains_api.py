@@ -26,7 +26,6 @@ from domains.service import (
     DomainAlreadyExistsError,
     DomainService,
     InvalidWebsiteURLError,
-    ParentDomainNotFoundError,
 )
 
 
@@ -91,23 +90,24 @@ class TestCreateDomain:
     def test_service_receives_correct_arguments(self, client, mock_service):
         client.post(
             "/domains/",
-            json={
-                "website_url": "https://example.com",
-                "key": "MY_KEY",
-                "parent_id": 5,
-            },
+            json={"website_url": "https://example.com"},
         )
         mock_service.add_domain.assert_called_once_with(
             website_url="https://example.com",
-            key="MY_KEY",
-            parent_id=5,
+            parent_id=1,
         )
 
-    def test_optional_fields_default_to_none(self, client, mock_service):
-        client.post("/domains/", json={"website_url": "https://example.com"})
+    def test_extra_fields_are_ignored(self, client, mock_service):
+        """key and parent_id sent by the client should be silently ignored."""
+        response = client.post(
+            "/domains/",
+            json={"website_url": "https://example.com", "key": "CUSTOM", "parent_id": 99},
+        )
+        # still succeeds – unknown fields are stripped by marshmallow
+        assert response.status_code == 201
         _, kwargs = mock_service.add_domain.call_args
-        assert kwargs.get("key") is None
-        assert kwargs.get("parent_id") is None
+        assert "key" not in kwargs
+        assert kwargs["parent_id"] == 1
 
 
 # ---------------------------------------------------------------------------
@@ -125,13 +125,6 @@ class TestCreateDomainValidation:
 
     def test_url_without_tld_returns_422(self, client, mock_service):
         response = client.post("/domains/", json={"website_url": "https://nodomain"})
-        assert response.status_code == 422
-
-    def test_invalid_key_characters_returns_422(self, client, mock_service):
-        response = client.post(
-            "/domains/",
-            json={"website_url": "https://example.com", "key": "has spaces!"},
-        )
         assert response.status_code == 422
 
     def test_no_json_body_returns_422(self, client, mock_service):
@@ -159,16 +152,6 @@ class TestCreateDomainServiceErrors:
             "/domains/", json={"website_url": "example.com"}
         )
         assert response.status_code == 422
-
-    def test_unknown_parent_returns_404(self, client, mock_service):
-        mock_service.add_domain.side_effect = ParentDomainNotFoundError(
-            "Parent domain with id=999 does not exist."
-        )
-        response = client.post(
-            "/domains/",
-            json={"website_url": "https://example.com", "parent_id": 999},
-        )
-        assert response.status_code == 404
 
 
 # ---------------------------------------------------------------------------

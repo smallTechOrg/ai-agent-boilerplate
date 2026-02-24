@@ -139,6 +139,7 @@ cd code
 python app.py
 ```
 Now visit http://127.0.0.1:5000/ in your browser.
+For newer APIs visit http://127.0.0.1:5001/api/docs.
 
 ## Test Flask APIs 
 

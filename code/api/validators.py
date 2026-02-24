@@ -21,6 +21,26 @@ def chat_api_validate(request) -> ValidationResponse:
     return ValidationResponse(True, "", {"request_type":request_type, "domain":address_validation_response.data})
     
 
+def validate_contact_data(request):
+    data = request.get_json()
+    if not data:
+        return ValidationResponse(False, "data is required")
+    session_validation = validate_session_id(request)
+    if not session_validation.is_valid:
+        return session_validation
+    name    = data.get("name")
+    email   = data.get("email")
+    mobile  = data.get("mobile")
+    country = data.get("country")
+    if not any([name, email, mobile, country]):
+        return ValidationResponse(False, "At least one of name, email, mobile, or country is required")
+    if email and ("@" not in email or "." not in email):
+        return ValidationResponse(False, "Invalid email address")
+    if mobile and not str(mobile).replace("+", "").replace(" ", "").isdigit():
+        return ValidationResponse(False, "Invalid mobile number")
+    return ValidationResponse(True, "")
+
+
 def validate_update_data(request):
     data = request.get_json()
     status = data.get("status")

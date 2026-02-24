@@ -6,9 +6,9 @@ from flask import Blueprint, jsonify, request
 from api.models import APIResponse
 from history import get_history
 from leads import get_all_chat_info
-from leads_update import update_chat_info
+from leads_update import update_chat_info, update_contact_info
 from llm_api import get_groq_response
-from api.validators import validate_address, validate_history_data, validate_session_id, validate_update_data, chat_api_validate
+from api.validators import validate_address, validate_contact_data, validate_history_data, validate_session_id, validate_update_data, chat_api_validate
 
 chat_bp = Blueprint("chat", __name__)
 
@@ -50,6 +50,25 @@ def patch_updates():
         is_active = data.get("is_active")
         update_chat_info(session_id, status, remarks, is_active)
         return APIResponse(None,{'message': "chat-info updated"}).response(HTTPStatus.OK)
+    except Exception as e:
+        print(traceback.format_exc())
+        return APIResponse().response(HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+@chat_bp.route('/chat-info/contact', methods=['PATCH'])
+def patch_contact_info():
+    try:
+        contact_validation_response = validate_contact_data(request)
+        if not contact_validation_response.is_valid:
+            return APIResponse(contact_validation_response).response(HTTPStatus.BAD_REQUEST)
+        data = request.get_json()
+        session_id = data.get("session_id")
+        name    = data.get("name")
+        email   = data.get("email")
+        mobile  = data.get("mobile")
+        country = data.get("country")
+        update_contact_info(session_id, name, email, mobile, country)
+        return APIResponse(None, {'message': "contact info updated"}).response(HTTPStatus.OK)
     except Exception as e:
         print(traceback.format_exc())
         return APIResponse().response(HTTPStatus.INTERNAL_SERVER_ERROR)

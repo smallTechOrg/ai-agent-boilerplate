@@ -1,196 +1,20 @@
-<!-- # This is temporary file, later replaced by Next.js frontend -->
-
 <!DOCTYPE html>
 <html>
 <head>
   <title>LLM Chatbot</title>
   <meta charset="UTF-8">
-  <!-- Mobile-friendly viewport for responsivity -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    #chatbox {
-      border: 1px solid #ccc;
-      padding: 10px;
-      height: 300px;
-      width: 100%;
-      max-width: 500px;
-      overflow-y: auto;
-      margin-bottom: 10px;
-      background: #fafafa;
-    }
-    form {
-      display: flex;
-      max-width: 500px;
-    }
-    input[type="text"] {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px 0 0 4px;
-    }
-    button {
-      padding: 8px 14px;
-      border: 1px solid #1a73e8;
-      border-radius: 0 4px 4px 0;
-      background: #1a73e8;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #1761c7;
-    }
-
-    /* Leads Table Styling */
-    #leadsSection {
-      margin-top: 20px;
-      max-width: 90%;
-      overflow-x: auto;
-    }
-    #leadsTable {
-      border-collapse: collapse;
-      width: 100%;
-      max-width: 800px;
-    }
-    #leadsTable th, #leadsTable td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-    #leadsTable th {
-      background-color: #f4f4f4;
-    }
-  </style>
 </head>
 <body>
-  <h2>Chat with LLM</h2>
-  <div id="chatbox"></div>
-  <form id="chatForm" autocomplete="off">
-    <input type="text" id="input" required>
-    <button type="submit">Send</button>
-  </form>
 
-  <!-- Leads Section -->
-  <div id="leadsSection">
-    <h3>Leads</h3>
-    <table id="leadsTable">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Mobile</th>
-          <th>Country</th>
-          <th>Status</th>
-          <th>Remarks</th>
-          <th>Request Type</th>
-          <th>Created At</th>
-        </tr>
-      </thead>
-      <tbody id="leadsBody">
-        <tr><td colspan="8">Loading leads...</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- Embedded Chatbot Widget -->
+  <script 
+    src="http://localhost:3001/embed.js"
+    data-chat-url="http://localhost:3001/embed"
+    data-colour="#4F46E5"
+    data-tagline="Chat with us!"
+    data-display-mobile="true"
+  ></script>
 
-<script>
-  const sessionId = crypto.randomUUID();
-  const request_type = "sales";
-  const chatbox = document.getElementById('chatbox');
-
-  // Function to render history messages
-  function renderHistory(messages) {
-    chatbox.innerHTML = ''; // clear existing
-    messages.forEach(msg => {
-      if (msg.type === "human") {
-        chatbox.innerHTML += `<b>You:</b> ${msg.content}<br>`;
-      } else if (msg.type === "ai") {
-        chatbox.innerHTML += `<b>Bot:</b> ${msg.content}<br>`;
-      }
-    });
-    chatbox.scrollTop = chatbox.scrollHeight;
-  }
-
-  // Load history on page load/refresh
-  async function loadHistory() {
-    try {
-      const res = await fetch(`/history?session_id=${sessionId}`);
-      const data = await res.json();
-
-      if (res.status === 200 || res.status === 201) {
-        renderHistory(data.history);
-      } else {
-        chatbox.innerHTML = `<span style="color:red;"><b>Error:</b> Could not load history (${res.status})</span>`;
-      }
-    } catch (err) {
-      chatbox.innerHTML = `<span style="color:red;"><b>Error:</b> Network issue loading history.</span>`;
-    }
-  }
-
-  // Handle form submission (send message)
-  document.getElementById('chatForm').onsubmit = async function(e) {
-    e.preventDefault();
-    const input = document.getElementById('input');
-    let userMsg = input.value.trim();
-    if (!userMsg) {
-      alert("Please enter a message before sending.");
-      return;
-    }
-    chatbox.innerHTML += `<b>You:</b> ${userMsg}<br>`;
-    input.value = '';
-    try {
-      const response = await fetch('/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({input: userMsg,session_id: sessionId, request_type: request_type })
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        chatbox.innerHTML += `<b>Bot:</b> ${data.response}<br>`;
-      } else {
-        chatbox.innerHTML += `<span style="color: red;"><b>Error:</b> ${data.error}</span><br>`;
-      }
-    } catch (err) {
-      chatbox.innerHTML += `<span style="color: red;"><b>Error:</b> Network or server issue. Please try again later.</span><br>`;
-    }
-    chatbox.scrollTop = chatbox.scrollHeight;
-  };
-
-  // Fetch and render leads
-  async function loadLeads() {
-    const tbody = document.getElementById("leadsBody");
-    try {
-      const res = await fetch('/leads');
-      const data = await res.json();
-
-      if (res.status === 200 || res.status === 201) {
-        tbody.innerHTML = '';
-        data.leads.forEach(lead => {
-          tbody.innerHTML += `
-            <tr>
-              <td>${lead.name || '-'}</td>
-              <td>${lead.email || '-'}</td>
-              <td>${lead.mobile_number || '-'}</td>
-              <td>${lead.country || '-'}</td>
-              <td>${lead.status || '-'}</td>
-              <td>${lead.remarks || '-'}</td>
-              <td>${lead.request_type || '-'}</td>
-              <td>${lead.created_at || '-'}</td>
-            </tr>`;
-        });
-      } else {
-        tbody.innerHTML = `<tr><td colspan="8" style="color:red;">Error loading leads (${res.status})</td></tr>`;
-      }
-    } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="8" style="color:red;">Network error loading leads.</td></tr>`;
-    }
-  }
-
-  // Load history + leads when page loads
-  window.onload = () => {
-    loadHistory();
-    loadLeads();
-  };
-</script>
 </body>
 </html>

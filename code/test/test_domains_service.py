@@ -127,12 +127,12 @@ class TestAddDomain:
 
     def test_key_is_auto_generated_when_omitted(self, service, mock_repo):
         service.add_domain("https://example.com")
-        _, kwargs = mock_repo.create.call_args
+        _, kwargs = mock_repo.create.call_args_list[0]
         assert kwargs["key"] == "EXAMPLE_COM"
 
     def test_explicit_key_is_normalised_to_uppercase(self, service, mock_repo):
         service.add_domain("https://example.com", key="acme_corp")
-        _, kwargs = mock_repo.create.call_args
+        _, kwargs = mock_repo.create.call_args_list[0]
         assert kwargs["key"] == "ACME_CORP"
 
     def test_parent_id_is_passed_to_repository(self, service, mock_repo):
@@ -143,7 +143,7 @@ class TestAddDomain:
 
     def test_repository_create_called_with_extracted_address(self, service, mock_repo):
         service.add_domain("https://www.example.com/page")
-        _, kwargs = mock_repo.create.call_args
+        _, kwargs = mock_repo.create.call_args_list[0]
         assert kwargs["address"] == "example.com"
 
 

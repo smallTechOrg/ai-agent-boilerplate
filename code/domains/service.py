@@ -101,11 +101,11 @@ class DomainService:
         resolved_key = self._resolve_key(key, address)
         domain = self._repo.create(key=resolved_key, address=address, parent_id=parent_id)
 
-        # Auto-create the www. variant so both bare and www hostnames are registered.
+        # Auto-create the www. variant so both bare and www hostnames are registered,
+        # sharing the same key so lookups always return the same key regardless of prefix.
         www_address = f"www.{address}"
         if self._repo.find_by_address(www_address) is None:
-            www_key = self._resolve_key(None, www_address)
-            self._repo.create(key=www_key, address=www_address, parent_id=parent_id)
+            self._repo.create(key=resolved_key, address=www_address, parent_id=parent_id)
 
         return domain
 

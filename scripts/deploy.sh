@@ -1,9 +1,12 @@
 #!/bin/bash
-set -e  # exit if any command fails
+set -euo pipefail
+
+# Re-run as root in a non-interactive way if needed.
+if [ "${EUID:-$(id -u)}" -ne 0 ]; then
+	exec sudo -n "$0" "$@"
+fi
 
 echo "==== Starting deploy.sh ===="
-
-sudo su
 
 cd /opt/ai-agent-boilerplate
 

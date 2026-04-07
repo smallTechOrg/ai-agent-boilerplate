@@ -2,6 +2,13 @@
 # update_app.sh
 # Cleans old logs, runs on VM startup, pulls latest code, and triggers deploy.sh
 
+set -euo pipefail
+
+# Re-run as root in a non-interactive way if needed.
+if [ "${EUID:-$(id -u)}" -ne 0 ]; then
+  exec sudo -n "$0" "$@"
+fi
+
 # Clean or rotate old logs
 LOG_FILE="/var/log/update_app.log"
 
@@ -16,9 +23,8 @@ fi
 # Start logging
 echo "==== $(date): Starting update_app.sh ====" | tee -a "$LOG_FILE"
 exec >> "$LOG_FILE" 2>&1
-set -ex
+set -x
 
-sudo su
 cd /opt/ai-agent-boilerplate
 
 # Read branch name from metadata
@@ -32,4 +38,4 @@ git -c safe.directory=/opt/ai-agent-boilerplate clean -fd
 
 echo "Running deploy.sh..." | tee -a "$LOG_FILE"
 chmod +x scripts/deploy.sh
-./scripts/deploy.sh deploy >> "$LOG_FILE" 2>&1
+./scripts/deploy.sh >> "$LOG_FILE" 2>&1

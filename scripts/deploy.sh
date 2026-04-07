@@ -3,8 +3,9 @@ set -e  # exit if any command fails
 
 echo "==== Starting deploy.sh ===="
 
+sudo su
 
-cd /home/vivek/Ai-agent-boilerplate/ai-agent-boilerplate
+cd /opt/ai-agent-boilerplate
 
 echo "Activating virtualenv..."
 source venv/bin/activate
@@ -23,7 +24,7 @@ python3 get_env.py
 
 echo "Restarting service..."
 pkill -f flask || true
-cd /home/vivek/Ai-agent-boilerplate/ai-agent-boilerplate/code
+cd /opt/ai-agent-boilerplate/code
 export FLASK_APP=app.py
 nohup flask run --host=0.0.0.0 --port=5000 > flask.log 2>&1 &
 

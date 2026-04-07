@@ -26,10 +26,10 @@ echo "Generating .env file using Python script..."
 python3 get_env.py
 
 echo "Restarting service..."
-PID=$(lsof -t -i:5000) || true
-if [ ! -z "$PID" ]; then
-	kill -9 $PID
-fi
+
+echo "Stopping only ai-agent service..."
+pkill -f "/opt/ai-agent-boilerplate"
+
 cd /opt/ai-agent-boilerplate/code
 export FLASK_APP=app.py
 nohup flask run --host=0.0.0.0 --port=5000 > flask.log 2>&1 &

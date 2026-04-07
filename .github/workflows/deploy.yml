@@ -22,13 +22,13 @@ jobs:
       - name: Update startup script and restart staging VM
         run: |
           gcloud compute instances add-metadata ${{secrets.GCP_VM_INSTANCE_NAME_STAGING}} \
-            --zone=${{secrets.GCP_ZONE}} \
+            --zone=${{secrets.GCP_ZONE_STAGING}} \
             --project=${{secrets.GCP_PROJECT}} \
             --metadata-from-file=startup-script=./scripts/update_app.sh \
             --metadata=BRANCH_NAME=${GITHUB_REF#refs/heads/}
 
-          gcloud compute instances stop ${{secrets.GCP_VM_INSTANCE_NAME_STAGING }} --zone=${{secrets.GCP_ZONE}} --project=${{secrets.GCP_PROJECT}}
-          gcloud compute instances start ${{secrets.GCP_VM_INSTANCE_NAME_STAGING }} --zone=${{secrets.GCP_ZONE}} --project=${{secrets.GCP_PROJECT}}
+          gcloud compute instances stop ${{secrets.GCP_VM_INSTANCE_NAME_STAGING }} --zone=${{secrets.GCP_ZONE_STAGING}} --project=${{secrets.GCP_PROJECT}}
+          gcloud compute instances start ${{secrets.GCP_VM_INSTANCE_NAME_STAGING }} --zone=${{secrets.GCP_ZONE_STAGING}} --project=${{secrets.GCP_PROJECT}}
 
   deploy-production:
     if: github.ref == 'refs/heads/main'

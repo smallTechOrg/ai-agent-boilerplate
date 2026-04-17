@@ -67,15 +67,15 @@ jobs:
             --zone=${{ secrets.GCP_ZONE_STAGING }} \
             --project=${{ secrets.GCP_PROJECT }} \
             --ssh-flag="-o StrictHostKeyChecking=no" \
-            --command="sudo bash -c '
-              cd /home/vivek/Ai-agent-boilerplate/ai-agent-boilerplate &&
-              git config --global --add safe.directory /home/vivek/Ai-agent-boilerplate/ai-agent-boilerplate &&
-              git fetch --all &&
-              git reset --hard origin/staging &&
-              git clean -fd &&
-              chmod +x scripts/deploy.sh &&
-              ./scripts/deploy.sh
-            '"
+            --command="sudo bash /opt/ai-agent-boilerplate/scripts/update_app.sh"
+      - name: Show deploy logs
+        if: always()
+        run: |
+          gcloud compute ssh ${{ secrets.GCP_VM_INSTANCE_NAME_STAGING }} \
+            --zone=${{ secrets.GCP_ZONE_STAGING }} \
+            --project=${{ secrets.GCP_PROJECT }} \
+            --ssh-flag="-o StrictHostKeyChecking=no" \
+            --command="sudo cat /var/log/update_app.log || echo 'No log file found'"
       - name: Health check
         run: |
           sleep 10
@@ -108,15 +108,15 @@ jobs:
             --zone=${{ secrets.GCP_ZONE_PROD }} \
             --project=${{ secrets.GCP_PROJECT }} \
             --ssh-flag="-o StrictHostKeyChecking=no" \
-            --command="sudo bash -c '
-              cd /home/vivek/Ai-agent-boilerplate/ai-agent-boilerplate &&
-              git config --global --add safe.directory /home/vivek/Ai-agent-boilerplate/ai-agent-boilerplate &&
-              git fetch --all &&
-              git reset --hard origin/main &&
-              git clean -fd &&
-              chmod +x scripts/deploy.sh &&
-              ./scripts/deploy.sh
-            '"
+            --command="sudo bash /opt/ai-agent-boilerplate/scripts/update_app.sh"
+      - name: Show deploy logs
+        if: always()
+        run: |
+          gcloud compute ssh ${{ secrets.GCP_VM_INSTANCE_NAME_PROD }} \
+            --zone=${{ secrets.GCP_ZONE_PROD }} \
+            --project=${{ secrets.GCP_PROJECT }} \
+            --ssh-flag="-o StrictHostKeyChecking=no" \
+            --command="sudo cat /var/log/update_app.log || echo 'No log file found'"
       - name: Health check
         run: |
           sleep 10

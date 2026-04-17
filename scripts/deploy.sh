@@ -1,10 +1,14 @@
 #!/bin/bash
-set -e  # exit if any command fails
+set -euo pipefail
+
+# Re-run as root in a non-interactive way if needed.
+if [ "${EUID:-$(id -u)}" -ne 0 ]; then
+	exec sudo -n "$0" "$@"
+fi
 
 echo "==== Starting deploy.sh ===="
 
-
-cd /home/vivek/Ai-agent-boilerplate/ai-agent-boilerplate
+cd /opt/ai-agent-boilerplate
 
 echo "Activating virtualenv..."
 source venv/bin/activate
@@ -22,10 +26,17 @@ echo "Generating .env file using Python script..."
 python3 get_env.py
 
 echo "Restarting service..."
-pkill -f flask || true
-cd /home/vivek/Ai-agent-boilerplate/ai-agent-boilerplate/code
+
+echo "Stopping only ai-agent service..."
+if [ -f zero.pid ]; then
+    kill $(cat zero.pid) || true
+    rm zero.pid
+fi
+
+echo "Starting Flask app..."
+cd /opt/ai-agent-boilerplate/code
 export FLASK_APP=app.py
 nohup flask run --host=0.0.0.0 --port=5000 > flask.log 2>&1 &
-
+echo $! > zero.pid
 
 echo "✅ Deployment complete!"
